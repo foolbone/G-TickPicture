@@ -116,3 +116,6 @@ tools/productlib/frontend/node_modules/
 
 # outputs 下的一次性验证文档（11MB 级样例，不是工程的一部分）
 /outputs/**/*.docx
+
+# 清理备份（2026-10-22 大清理时的兜底 tar，不是工程文件）
+.workbuddy/backups/
