@@ -1,0 +1,148 @@
+name: g_tick_picture
+description: 仓库预检监装现场取证工具 —— 批量采集 / 统一对应 / 打包交付
+publish_to: 'none'
+version: 0.24.19+55
+# ─────────────────────────────────────────────────────────────
+# 依赖按里程碑分级：M1 只启用「骨架 + 数据层 + 清单导入」所需，
+# 后续里程碑的包先注释掉。这样 M1 的 pub get 面最小、最易通过。
+#
+# 若 flutter pub get 报某个版本不存在：
+#   flutter pub upgrade --major-versions
+# 会自动对齐到当前可用的最新版本。
+# ─────────────────────────────────────────────────────────────
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+  # 3.27 起 CardThemeData / Color.withValues 才可用（本工程用到）。
+  # 如果本机 Flutter 低于此版本，先 `flutter upgrade`。
+  flutter: '>=3.27.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 中文日期选择器 / 系统对话框本地化（SDK 自带，无版本风险）
+  flutter_localizations:
+    sdk: flutter
+
+  # ── M1 状态 / 路由 / 主题 ──────────────────────────────────
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.7
+
+  # StreamGroup.merge（2026-10-14 v0.23.0）：组流要并一条「缺缩略图张数」
+  # 触发流，否则照片行变化不推新、列表停在占位图。camera_capture_service
+  # 早已用它做 AsyncLimiter，这里显式声明成直接依赖（lint 会查）。
+  async: ^2.12.0
+
+  # ── M1 数据层（drift / SQLite） ────────────────────────────
+  drift: ^2.20.1
+  drift_flutter: ^0.2.1
+  sqlite3_flutter_libs: ^0.5.24
+
+  # ── M1 基础设施 ────────────────────────────────────────────
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  uuid: ^4.5.1
+  intl: ^0.19.0
+  collection: ^1.18.0
+  shared_preferences: ^2.3.2
+
+  # ── M1 清单导入 ────────────────────────────────────────────
+  excel: ^4.0.6
+  csv: ^6.0.0
+  # 修复 WPS 生成的 xlsx：styles.xml 里出现 <164 的 numFmtId 时 excel 包
+  # 直接抛异常，reader 需要重写 zip 内的 styles.xml 重试（同时是 M5 交付
+  # 打包 ZIP 的前置依赖，版本与 excel 4.0.6 的约束对齐）。
+  archive: ^3.6.1
+  file_picker: ^8.1.2
+
+  # ── M2 采集（相机 / 相册 / 缩略图 / 存储预检）—— M2 启用 ──────
+  camera: ^0.11.0+2
+  image: ^4.2.0
+  permission_handler: ^11.3.1
+  # ⚠️ 刻意**不引入** disk_space_plus 之类的插件来查磁盘余量。理由见下方说明。
+  # device_info_plus: ^10.1.2      # M2.1 相机兼容策略会用到（按机型降级）
+
+  # ── M4 OCR 建议（可整体关闭）—— M4 启用 ────────────────────
+  # 离线 on-device 识别，不联网（§3 隐私边界）。只做建议，不做归属。
+  google_mlkit_text_recognition: ^0.13.0
+
+  # ── M5 交付（ZIP / 分享 / WebDAV）—— M5 启用 ──────────────
+  # （archive 已在 M1 清单导入区启用：xlsx 修复 + 交付打包共用）
+  #
+  # ⚠️ 2026-09-30：PDF 联系表已整体移除（老板拍板「不需要 PDF 联系表」）。
+  #    旧实现把 1000+ 张图的字节全攒进内存，在 1000+ 张 / 70+ 组的项目上
+  #    必然 OOM 崩溃。交付包现在只含：预检/监装 照片 + manifest（+ 可选 ZIP）。
+  share_plus: ^10.0.2
+  # webdav_client + flutter_secure_storage：WebDAV 同步阶段再启用
+  # webdav_client: ^1.2.1
+  # flutter_secure_storage: ^9.2.2
+  # mobile_scanner: ^5.2.3
+
+# ═══════════════════════════════════════════════════════════════
+# 为什么不用 disk_space_plus 查磁盘余量（M2 决策，别再试回去）
+# ═══════════════════════════════════════════════════════════════
+# 1. 可用的 0.2.4 版本 Android 端仍在用**已移除的**
+#    `PluginRegistry.Registrar` API → Gradle Kotlin 编译直接失败：
+#    `Unresolved reference: Registrar`
+#    （DiskSpacePlusPlugin.kt:15）
+# 2. 修好的 0.2.5 / 0.2.6 明确要求 **Dart SDK >= 3.7.2**，本机 Flutter
+#    3.29.0 带的是 Dart 3.7.0 → 版本求解失败。
+# 3. 为一个"锦上添花"的预检去升级整个 Flutter SDK，代价与收益不成比例。
+#
+# 替代方案（已落地在 data/fs/storage_service.dart）：
+#   · 第 1 路 —— Dart 侧直接看**可用写探针**：能写 + 能删 → 空间未耗尽；
+#     写失败 → freeBytes = 0，此时才提示用户。
+#   · 第 2 路 —— 查不到就返回 unknown，**保持沉默**（§8.2：查不到 ≠ 不足）。
+#
+# 这个口径对采集场景是足够的：我们真正要回答的是
+# 「现在能不能开拍」，而不是「还剩多少 GB」。
+# 若将来确实需要精确余量（例如 M5 下载/上传前的空间检查），
+# 再引入时请先确认 Dart SDK 已 >= 3.7.2。
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  drift_dev: ^2.20.1
+  build_runner: ^2.4.12
+
+  # 图标生成工具（仅构建期，不进 APK）：dart run flutter_launcher_icons
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+
+  # 版本号展示（core/app_info.dart 的 AppInfo）要 rootBundle 读这份文件。
+  # ⚠️ 必须显式声明：Flutter **不会**自动把 pubspec.yaml 打进资产，
+  #    不声明则 release 包里没有它 → loadString 抛异常 → 关于面板
+  #    显示「版本未知」（v0.24.2 踩坑，此前注释里的假设是错的）。
+  #    单测环境同样没有这份资产 —— AppInfo 按设计回落「版本未知」。
+  assets:
+    - pubspec.yaml
+
+# ── APP 图标生成配置（底图由 tools/gen_icon.py 产出到 assets/icon/） ──
+# 改图标后重新生成：dart run flutter_launcher_icons（经 run_unsandboxed.ps1）
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  min_sdk_android: 26
+  adaptive_icon_background: "#0D2B45"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+
+# ═══════════════════════════════════════════════════════════════
+# camera_android_camerax fork（2026-10-12 v0.21.0，方案文档 4.3 节）
+# ═══════════════════════════════════════════════════════════════
+# ⚠️ 本块必须在文件**末尾**：插进 dependencies 中间会把后面的依赖项
+# 解析进 overrides（v0.20.0 首次发版翻车：google_mlkit/share_plus 变成
+# 「isn't a dependency of the importing package」）。
+# 上游 pub 升级路线已断（camera 0.12+ 要 Dart 3.9 / Flutter 3.35，本工程
+# Flutter 3.29 锁死），而 ZSL / JPEG q100 等质量-速度关键能力在 pigeon
+# API 层从未暴露。fork = 项目内拷贝（third_party/）+ 只改原生侧，不动
+# pigeon 协议。当前改动：ImageCapture CAPTURE_MODE_ZERO_SHUTTER_LAG +
+# setJpegQuality(100)（见 ImageCaptureProxyApi.pigeon_defaultConstructor）。
+# 上游 0.6.x 已事实冻结，基线不会漂移；改 fork 原生码后必须先过
+# gradlew :app:compileReleaseKotlin 再发版。
+dependency_overrides:
+  camera_android_camerax:
+    path: ../third_party/camera_android_camerax

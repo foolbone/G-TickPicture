@@ -1,0 +1,103 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         权限声明（M2 采集）
+
+         刻意**不申请**的权限：
+           · MANAGE_EXTERNAL_STORAGE —— 不需要全盘访问。照片写 App 私有外置目录，
+             导出走系统分享 / SAF，全程受分区存储约束（设计方案 §8.3）
+           · INTERNET 在采集期不参与 —— 采集模块自己不发任何请求（三条禁令之一），
+             网络权限留给 M5 的 WebDAV 上传
+           · ACCESS_MEDIA_LOCATION —— 不读照片的地理位置
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- 相机：采集的唯一权限。minSdk 26 起无需在运行时申请存储写权限 -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- 相册读取：Android 13+ 读媒体用分类型权限，旧版本退化为读外置存储 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         相册**写入**（P4 · 诉求「拍照要进手机相册」）—— 分两个版本两块策略：
+
+           · Android 10+：MediaStore + RELATIVE_PATH + IS_PENDING，
+             App 把自己拍的照片插进公共媒体库是**免权限**操作。
+           · Android 8/9：没有分区存储，写公共 Pictures 目录必须
+             WRITE_EXTERNAL_STORAGE。用 maxSdkVersion=28 限定 ——
+             它的存在只为这两代老系统，**不会被 Play/新系统当成
+             索取全盘访问的理由**；依然不碰 MANAGE_EXTERNAL_STORAGE。
+
+         运行时申请只在 <= 28 上发生，且失败静默降级
+         （照片仍在 App 内可用、可导出）—— §8.2「查不到 ≠ 不足」
+         的同款纪律：权限不给，也不打扰正在拍照的人。
+         ═══════════════════════════════════════════════════════════ -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+
+    <!-- 相机不是必需的，缺相机的设备（如部分平板）也应能装 —— 装完走相册导入 -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+
+    <application
+        android:label="集刻-采集"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <!-- 系统相机拍照的临时文件授权（2026-10-14 v0.22.0）：
+             ACTION_IMAGE_CAPTURE 的 EXTRA_OUTPUT 要一个 content URI
+             （API 24+ 禁 file://）。 authority 用 ${applicationId} 占位，
+             Gradle 会替换成 com.gtick.g_tick_picture.fileprovider，
+             Dart/Kotlin 两侧都按包名拼，不存在两份真源。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

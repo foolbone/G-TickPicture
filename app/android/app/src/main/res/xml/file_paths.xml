@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 路径声明（2026-10-14 v0.22.0 系统相机拍照）。
+
+  系统相机拍照走 ACTION_IMAGE_CAPTURE + EXTRA_OUTPUT：App 给一个临时
+  文件的 content URI，系统相机把全尺寸原图写进去。API 24+ 起 file://
+  URI 会抛 FileUriExposedException，必须经 FileProvider 包一层。
+
+  临时目录 gt_temp 与 Dart 侧项目目录**同根**（都是 getExternalFilesDir），
+  拍完 ingest 时 rename 原子移动进项目 raw 目录，零字节拷贝。
+-->
+<paths>
+    <external-files-path name="gt_temp" path="gt_temp/" />
+</paths>

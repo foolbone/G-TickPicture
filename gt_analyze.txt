@@ -1,0 +1,15 @@
+﻿﻿flutter.bat : Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+所在位置 行:1 字符: 51
++ ... cture\app'; & 'D:\dev\flutter\bin\flutter.bat' analyze *>> 'C:\Users\ ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Flutter assets ...st this source!:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Analyzing app...                                                
+
+   info - Use 'const' with the constructor to improve performance - lib\ui\capture\gallery_picker_page.dart:498:22 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\ui\capture\gallery_picker_page.dart:499:27 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\ui\capture\gallery_picker_page.dart:506:19 - prefer_const_constructors
+
+3 issues found. (ran in 88.4s)
+EXIT=1

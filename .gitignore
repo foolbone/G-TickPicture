@@ -1,0 +1,118 @@
+# ═══════════════════════════════════════════════════════════════
+# G-TickPicture 仓库忽略规则
+#
+# 原则：仓库只放「源码 + 文档 + 脚本 + 小体积配置」。
+#       构建产物、签名密钥、测试素材、日志 —— 一律不入库。
+#
+# ⚠️ 加了规则后必须自检：git status --short 里**不能**出现
+#    keys/、*.apk、app/build、任何 *.jks。
+# ═══════════════════════════════════════════════════════════════
+
+# ── 1. 签名密钥与本地环境（含明文密码，绝对不能入库）─────────
+keys/
+*.jks
+*.keystore
+*.p12
+app/android/key.properties
+app/android/local.properties
+
+# ── 2. 构建产物 ───────────────────────────────────────────────
+app/build/
+app/android/build/
+app/android/app/build/
+app/android/.gradle/
+app/.dart_tool/
+app/.idea/
+*.iml
+*.apk
+*.aab
+*.apk.sha1
+
+# ── 2b. productlib 打包构建产物（PyInstaller onedir，GB 级，含 OCR 模型 ~30MB）──
+# build_portable.py 产出 dist/<时间戳>/；根目录 build/ dist/ 为 PyInstaller 工作目录；
+# *.old / *.prev* 为构建归档留痕，同样不入库。
+/build/
+/build.old/
+/build.prev*/
+/dist/
+/dist.old/
+/dist.prev*/
+
+# ── 3. 日志 / 临时输出 ────────────────────────────────────────
+*.log
+*.dtmp
+*.pyc
+__pycache__/
+.workbuddy/tmp/
+.workbuddy/**/*_check.txt
+.workbuddy/**/*_out*.txt
+.workbuddy/**/apk_verify.txt
+
+# ── 4. 测试素材与业务数据（GB 级，不入库）───────────────────
+# 这些是开发期的真实样本，不是工程的一部分。
+# 需要时从项目网盘/资料库取，不进 git。
+9.13 5x40HQ/
+历史图片/
+标准产品库/
+# ⚠️ 必须带前导斜杠 —— 不带斜杠的 `productlib/` 会匹配**任意层级**的同名
+#    目录，把 tools/productlib/（8900 行源码）一起吞掉，git ls-files 命中 0。
+#    这里只要忽略根目录的数据目录。
+/productlib/
+# 一次性补丁/诊断脚本（下划线前缀）。已执行完，不入库 ——
+# 尤其 _patch_manual_link1.py 是对 products.js 做字符串替换的，
+# 留在版本里会被后人当成正常工具误跑。
+tools/productlib/_*.py
+PP-OCRv6_small_det_onnx/
+doc/PIDU9352234/
+
+# ── 5. 交付产物（每次发版生成，不入库）───────────────────────
+# 根目录的「集刻-采集_vX.Y.Z_*.apk」由 tools/release.ps1 产出，
+# 归档路径另议，不污染仓库历史。
+集刻-采集_*.apk
+
+# ── 6. 系统垃圾 ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── 9. 开发期一次性产物（2026-10-22 清理，一律不入库）────────
+# 调试探测留下的截图 / 报告 / 临时脚本、本地数据库、生成的图。
+# 判断标准：删掉不影响任何人重新构建或运行的东西，都不入库。
+/tmp/
+/productlib.db
+/productlib.db-*
+/generated-images/
+/gtick-logo/
+/gtick-logo_assets/
+/gtick-logo.miora
+/.acl-reports/
+/目标产物*
+# 文档工程里的二进制交付物（pptx / 预览图）由 build_ppt.py 现生成
+/outputs/*.png
+/outputs/**/*.pptx
+/outputs/**/preview/
+# OCR / 版面探测中间产物（tools/productlib 根目录平铺）
+/tools/productlib/_rows/
+/tools/productlib/_old_pad012_*
+/tools/productlib/det_crop_*
+/tools/productlib/frontend_*
+# frontend/ 目录下的一次性探测脚本与截图（_*.py 已在第 4 节忽略，这里补其它后缀）
+/tools/productlib/frontend/_*
+/tools/productlib/frontend/vite.config.js.timestamp-*.mjs
+
+# ── 7. 用途分类小模型（2026-10-17）───────────────────────────
+# models/ 只入库 usage_cls.onnx + usage_labels.json（运行时依赖）；
+# pth 是训练中间权重（onnx 已含全部推理所需），入库只会让仓库膨胀。
+tools/productlib/models/usage_cls.pth
+# training/ 只入库 *.py 脚本；数据集（7.5G 图片）与中间产物永不入库。
+tools/productlib/training/dataset/
+tools/productlib/training/dataset_usage/
+tools/productlib/training/audit_contactsheets/
+tools/productlib/training/outputs/
+
+# ── 8. Vue 3 前端（2026-10-18 改造分支）─────────────────────
+# 源码 tools/productlib/frontend/ 入库；node_modules 永不入库；
+# 构建产物 web-app-dist/ 入库（打包/现场不需要 Node）。
+tools/productlib/frontend/node_modules/
+
+# outputs 下的一次性验证文档（11MB 级样例，不是工程的一部分）
+/outputs/**/*.docx

@@ -1,0 +1,21 @@
+# ── 行尾统一 ────────────────────────────────────────────────
+# 入库统一 LF（避免同一文件在 Win/Mac 间来回改行尾造成满屏 diff）。
+* text=auto eol=lf
+
+# Windows 脚本按 CRLF 检出：PowerShell 5.1 对它最友好。
+# ⚠️ 行尾不是关键 —— **BOM 才是**。改完 .ps1 一律跑 tools/fix_ps1_bom.ps1。
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# ── 二进制，禁止做任何转换 ──────────────────────────────────
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.jks binary
+*.keystore binary
+*.xls binary
+*.xlsx binary
+*.db binary
+*.pdf binary
+*.onnx binary
+*.ttf binary

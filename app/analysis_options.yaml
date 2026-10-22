@@ -1,0 +1,76 @@
+# G-TickPicture 代码规范
+#
+# 本文件不只是 lint 配置，它还是「三段式架构」在代码层面的守卫。
+# 关键约束（对应设计方案 §3.3 / §2.1）：
+#   1. domain/capture/ 不得 import domain/suggest/   —— 采集期零智能
+#   2. 只有 data/repo/ 允许直接操作 drift 数据库
+#   3. 只有 domain/assign/AssignService 允许写 photo.item_id / photo_group.item_id
+# 第 1 条由 tools/check_architecture.ps1 在提交前校验；
+# 第 2、3 条靠下面禁用的 lint 规则与 code review 双保险。
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  # 注：不写 strong-mode / implicit-casts —— 那些是 Dart 2 时代的选项，
+  # Dart 3 已经是 sound null safety + 无隐式转换，写了反而会被
+  # 新版 analyzer 当成无效配置警告。
+
+  errors:
+    # 骨架阶段先把「未使用」降为提示，避免噪声淹没真正的问题
+    unused_import: warning
+    unused_local_variable: warning
+    dead_code: warning
+    missing_required_param: error
+    missing_return: error
+
+    # avoid_slow_async_io 在本项目是**误报**，降为 info：
+    # 该 lint 假设 File.exists() 等同步 API 总是更快，所以劝你用同步版。
+    # 但采集页一天要检查上千次文件/目录，同步调用会卡住 UI 线程 ——
+    # 在移动端这恰恰是我们要避免的。async 版本虽然单次开销大几微秒，
+    # 却把 I/O 让给了 event loop，这是刻意的取舍。
+    avoid_slow_async_io: info
+
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "build/**"
+    - ".dart_tool/**"
+    # 进程内 analyzer 诊断脚本（agent 沙箱里 analysis_server 起不来时的
+    # 替代品）：直接 import package:analyzer，不进构建，独立运行
+    # （dart --packages=.dart_tool/package_config.json tool/_analyze_inprocess.dart ...）。
+    # 不为它加 pubspec 依赖，排除静态检查。
+    - "tool/_analyze_inprocess.dart"
+
+linter:
+  rules:
+    # ── 正确性 ─────────────────────────────────────────────
+    always_declare_return_types: true
+    avoid_empty_else: true
+    # avoid_slow_async_io: 见上方 errors 段的说明（已降为 info，规则仍开着）
+    cancel_subscriptions: true
+    close_sinks: true
+    no_duplicate_case_values: true
+    throw_in_finally: true
+    unnecessary_statements: true
+    use_build_context_synchronously: true
+
+    # ── 风格一致性 ─────────────────────────────────────────
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    sort_child_properties_last: true
+    directives_ordering: true
+    slash_for_doc_comments: true
+
+    # ── 明确禁止 ───────────────────────────────────────────
+    avoid_print: true                  # 用 core/logger.dart
+    avoid_dynamic_calls: true
+    prefer_typing_uninitialized_variables: true
+    avoid_unused_constructor_parameters: true
+
+# ── 第 2 条约束的落地说明 ─────────────────────────────────────
+# drift 生成类 _$AppDatabase 只在 data/db 与 data/repo 下被 import。
+# 其他层（domain / ui）只能通过 Repository 暴露的接口访问数据。
+# 校验命令：
+#   tools/check_architecture.ps1

@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>预检拍照 APP · 完整设计实现方案 v3.1</title>
+<style>
+  :root{
+    --navy:#0d2b45; --navy-2:#14395c; --navy-3:#1e4e7a;
+    --accent:#c8452f; --accent-soft:#fdece8;
+    --bg:#f6f7f9; --card:#ffffff;
+    --text:#1f2937; --muted:#6b7280; --line:#e3e6ea;
+    --green:#2f855a; --green-bg:#e8f5ee;
+    --amber:#b7791f; --amber-bg:#fdf5e3;
+    --orange:#c05621; --orange-bg:#fdf0e6;
+    --red:#c53030; --red-bg:#fdeaea;
+    --blue:#2b6cb0; --blue-bg:#e8f1fb;
+    --violet:#6b46c1; --violet-bg:#f0eafb;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px;line-height:1.75;}
+  header.top{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 60%,var(--navy-3) 100%);
+    color:#fff;padding:38px 40px 30px;position:relative;overflow:hidden;}
+  header.top::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;
+    border:2px solid rgba(255,255,255,.18);border-radius:50%;}
+  header.top .kicker{font-size:12px;letter-spacing:3px;color:#9fc0e0;text-transform:uppercase;}
+  header.top h1{margin:10px 0 6px;font-size:30px;font-weight:700;letter-spacing:.5px;}
+  header.top .sub{color:#c8dcee;font-size:14px;}
+  header.top .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;}
+  header.top .meta span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+    padding:4px 12px;border-radius:20px;font-size:12.5px;}
+  .wrap{display:flex;max-width:1320px;margin:0 auto;gap:0;align-items:flex-start;}
+  nav.toc{position:sticky;top:0;width:250px;flex:0 0 250px;height:100vh;overflow-y:auto;
+    padding:26px 16px 60px 26px;border-right:1px solid var(--line);background:#fbfcfd;}
+  nav.toc h4{font-size:12px;color:var(--muted);letter-spacing:1px;margin:0 0 12px;text-transform:uppercase;}
+  nav.toc a{display:block;padding:6px 10px;color:#4a5568;text-decoration:none;font-size:13.5px;
+    border-left:2px solid transparent;border-radius:0 5px 5px 0;transition:.15s;}
+  nav.toc a:hover{background:#eef2f6;color:var(--navy);}
+  nav.toc a.active{color:var(--navy);font-weight:600;border-left-color:var(--accent);background:#eef2f6;}
+  nav.toc a .num{color:#a0aec0;font-size:12px;margin-right:6px;}
+  main{flex:1;min-width:0;padding:30px 40px 90px;background:var(--bg);}
+  section{margin-bottom:44px;scroll-margin-top:16px;}
+  h2{font-size:21px;color:var(--navy);margin:0 0 16px;padding-bottom:10px;
+    border-bottom:2px solid var(--navy);display:flex;align-items:baseline;gap:10px;}
+  h2 .n{color:var(--accent);font-size:14px;font-weight:700;letter-spacing:1px;}
+  h3{font-size:16.5px;color:var(--navy-2);margin:26px 0 10px;padding-left:11px;border-left:4px solid var(--accent);}
+  h4{font-size:14.5px;color:#2d3748;margin:18px 0 8px;}
+  p{margin:9px 0;}
+  ul,ol{margin:9px 0;padding-left:22px;}
+  li{margin:5px 0;}
+  code{background:#eef1f5;padding:1px 6px;border-radius:4px;font-size:13px;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;color:#2b4a6f;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:14px 0;}
+  .card.tip{border-left:4px solid var(--accent);background:#fffaf8;}
+  .card.warn{border-left:4px solid var(--amber);background:#fffdf5;}
+  .card.ok{border-left:4px solid var(--green);background:#f8fdfa;}
+  .card.new{border-left:4px solid var(--blue);background:#f7fbff;}
+  .card.viol{border-left:4px solid var(--violet);background:#faf8ff;}
+  .card .ct{font-weight:700;color:var(--navy);margin-bottom:6px;font-size:14.5px;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;background:#fff;}
+  th{background:var(--navy);color:#fff;text-align:left;padding:9px 11px;font-weight:600;font-size:13px;}
+  td{border-bottom:1px solid var(--line);padding:8px 11px;vertical-align:top;}
+  tbody tr:nth-child(even){background:#fafbfc;}
+  tbody tr:hover{background:#f0f4f8;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  @media(max-width:1000px){.grid2,.grid3{grid-template-columns:1fr;} nav.toc{display:none;} main{padding:20px;}}
+  .tag{display:inline-block;padding:2px 9px;border-radius:12px;font-size:12px;font-weight:600;line-height:1.7;}
+  .t-green{background:var(--green-bg);color:var(--green);}
+  .t-amber{background:var(--amber-bg);color:var(--amber);}
+  .t-orange{background:var(--orange-bg);color:var(--orange);}
+  .t-red{background:var(--red-bg);color:var(--red);}
+  .t-blue{background:var(--blue-bg);color:var(--blue);}
+  .t-violet{background:var(--violet-bg);color:var(--violet);}
+  .t-navy{background:#e7edf4;color:var(--navy);}
+  .t-gray{background:#eceff3;color:#7a8794;}
+  pre{background:#0f2136;color:#dbe7f3;padding:14px 16px;border-radius:8px;overflow-x:auto;
+    font-size:12.5px;line-height:1.65;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    margin:10px 0;border-left:3px solid var(--accent);}
+  pre .c{color:#6b8bb0;} pre .k{color:#7fd1e8;} pre .s{color:#a5e6a0;} pre .t{color:#f0c98a;}
+  pre.plain{background:#f4f6f8;color:#22303f;border-left-color:var(--navy);}
+  .fname{font-size:12px;color:var(--muted);margin:12px 0 -4px;font-family:monospace;}
+  .wire{background:#fff;border:1px solid var(--line);border-radius:10px;padding:0;margin:14px 0;overflow:hidden;}
+  .wire .wt{background:#f0f3f7;padding:7px 13px;font-size:12.5px;color:var(--navy);font-weight:700;border-bottom:1px solid var(--line);}
+  .wire .wb{padding:14px;}
+  .phone{width:250px;border:2px solid #33475b;border-radius:20px;padding:6px;background:#1c2b3a;margin:8px;display:inline-block;vertical-align:top;}
+  .phone .scr{background:#fff;border-radius:15px;height:452px;overflow:hidden;display:flex;flex-direction:column;font-size:11px;color:#2d3748;}
+  .phone .sb{background:var(--navy);color:#fff;padding:5px 9px;font-size:10px;display:flex;justify-content:space-between;}
+  .phone .bd{flex:1;overflow:hidden;padding:7px;background:#f4f6f8;}
+  .phone .bb{border-top:1px solid #dde2e8;background:#fff;display:flex;padding:4px 0;}
+  .phone .bb div{flex:1;text-align:center;font-size:9px;color:#7a8794;padding:2px 0;position:relative;}
+  .phone .bb div.on{color:var(--accent);font-weight:700;}
+  .phone .bb .badge{position:absolute;top:-2px;right:8px;background:var(--red);color:#fff;border-radius:7px;font-size:7.5px;padding:0 3px;line-height:11px;}
+  .row{background:#fff;border:1px solid #e6eaee;border-radius:5px;padding:6px 7px;margin-bottom:5px;display:flex;gap:6px;align-items:center;}
+  .row .thumb{width:30px;height:30px;border-radius:4px;background:#d7dee6;flex:0 0 30px;display:flex;align-items:center;justify-content:center;color:#8b98a6;font-size:8px;}
+  .row .g{flex:1;min-width:0;}
+  .row .t1{font-weight:700;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .t2{color:#8b98a6;font-size:9px;}
+  .pill{font-size:8.5px;padding:1px 5px;border-radius:8px;white-space:nowrap;}
+  .p-g{background:var(--green-bg);color:var(--green);} .p-a{background:var(--amber-bg);color:var(--amber);}
+  .p-o{background:var(--orange-bg);color:var(--orange);}
+  .p-r{background:var(--red-bg);color:var(--red);} .p-b{background:var(--blue-bg);color:var(--blue);}
+  .p-v{background:var(--violet-bg);color:var(--violet);}
+  .p-n{background:#eceff3;color:#7a8794;}
+  .camview{background:#22303f;flex:1;display:flex;flex-direction:column;position:relative;color:#fff;}
+  .camview .mid{flex:1;display:flex;align-items:center;justify-content:center;color:#7d8fa1;font-size:10px;}
+  .film{background:rgba(0,0,0,.6);padding:5px;display:flex;gap:4px;overflow:hidden;}
+  .film i{width:26px;height:26px;background:#3d4c5c;border-radius:3px;display:block;}
+  .film .cnt{margin-left:auto;color:#7fd1e8;font-weight:700;font-size:11px;align-self:center;}
+  .shutter{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:rgba(255,255,255,.25);}
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:14px 0;}
+  .flow .step{flex:1;min-width:140px;background:#fff;border:1px solid var(--line);padding:12px 14px;position:relative;}
+  .flow .step:first-child{border-radius:8px 0 0 8px;} .flow .step:last-child{border-radius:0 8px 8px 0;}
+  .flow .step .sn{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;}
+  .flow .step .st{font-weight:700;color:var(--navy);font-size:13.5px;margin:3px 0 4px;}
+  .flow .step .sd{font-size:12px;color:var(--muted);line-height:1.6;}
+  .stage{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:16px 0;}
+  .stage .sg{border:1px solid var(--line);padding:14px 16px;background:#fff;}
+  .stage .sg:first-child{border-radius:8px 0 0 8px;}
+  .stage .sg:last-child{border-radius:0 8px 8px 0;}
+  .stage .sg .sn{font-size:11px;font-weight:700;letter-spacing:2px;}
+  .stage .sg .st{font-size:16px;font-weight:700;color:var(--navy);margin:4px 0 6px;}
+  .stage .sg .sd{font-size:12.5px;color:var(--muted);line-height:1.65;}
+  .stage .sg.s1{border-top:4px solid var(--navy);} .stage .sg.s1 .sn{color:var(--navy);}
+  .stage .sg.s2{border-top:4px solid var(--accent);} .stage .sg.s2 .sn{color:var(--accent);}
+  .stage .sg.s3{border-top:4px solid var(--green);} .stage .sg.s3 .sn{color:var(--green);}
+  @media(max-width:1000px){.stage{grid-template-columns:1fr;} .stage .sg:first-child{border-radius:8px 8px 0 0;} .stage .sg:last-child{border-radius:0 0 8px 8px;}}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:13.5px;}
+  .kv .k{color:var(--muted);}
+  footer{max-width:1320px;margin:0 auto;padding:20px 40px 50px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);}
+  blockquote{margin:10px 0;padding:8px 14px;border-left:3px solid var(--navy-3);background:#f0f4f8;color:#37475a;font-size:13.5px;}
+  .del{color:#a0aec0;text-decoration:line-through;}
+  @media print{nav.toc{display:none;} body{background:#fff;} main{padding:0;} header.top{padding:20px;}
+    section{page-break-inside:avoid;} pre{background:#f4f6f8;color:#22303f;border-left-color:var(--navy);}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="kicker">Pre-shipment Inspect &amp; Loading Supervision</div>
+  <h1>预检拍照 APP · 完整设计实现方案</h1>
+  <div class="sub">仓库预检人员现场取证工具 —— 批量采集 · 统一对应 · 打包交付</div>
+  <div class="meta">
+    <span>版本 v3.1</span>
+    <span>平台 Android 8.0+</span>
+    <span>技术栈 Flutter 3.x</span>
+    <span>存储 SQLite + 本地文件</span>
+    <span>同步 通用 WebDAV</span>
+    <span>OCR 智能辅助（非决策）</span>
+    <span>免登录 · 内部分发</span>
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="toc" id="toc">
+  <h4>目录</h4>
+  <a href="#s0"><span class="num">00</span>v3.1 核心变更</a>
+  <a href="#s1"><span class="num">01</span>需求理解与现场动线</a>
+  <a href="#s2"><span class="num">02</span>设计原则与关键决策</a>
+  <a href="#s3"><span class="num">03</span>总体架构与技术选型</a>
+  <a href="#s4"><span class="num">04</span>信息架构与页面设计</a>
+  <a href="#s5"><span class="num">05</span>核心流程设计</a>
+  <a href="#s6"><span class="num">06</span>数据模型设计</a>
+  <a href="#s7"><span class="num">07</span>关键模块实现</a>
+  <a href="#s8"><span class="num">08</span>性能 · 异常 · 权限</a>
+  <a href="#s9"><span class="num">09</span>测试与验收标准</a>
+  <a href="#s10"><span class="num">10</span>排期与里程碑</a>
+  <a href="#s11"><span class="num">11</span>风险与开放问题</a>
+</nav>
+
+<main>
+
+<!-- ============ 0 ============ -->
+<section id="s0">
+<h2><span class="n">00</span> v3.1 核心变更</h2>
+
+<div class="card warn">
+  <div class="ct">v3.1 修订依据：现场真实规模（老板 09-23 确认）</div>
+  <table style="margin:8px 0 0;">
+    <tbody>
+      <tr><td style="width:120px"><strong>货品件数</strong></td><td><strong>几百件</strong>（不是 200 件）</td></tr>
+      <tr><td><strong>照片数</strong></td><td>原则上每件 2 张 → <strong>600~1600 张</strong></td></tr>
+      <tr><td><strong>作业时长</strong></td><td>预检 + 拍照<strong>持续 1 天</strong>（约 6~8 小时纯作业）</td></tr>
+      <tr><td><strong>完整性要求</strong></td><td>⚠️ <strong>原则上每件都拍，但实际能到 80% 覆盖率即可满足要求</strong></td></tr>
+    </tbody>
+  </table>
+  <br>
+  这四条里，<strong>最后一条改变了本方案的核心目标口径</strong>——前三条只是把规模放大了 3~8 倍，工程上可解；最后一条改的是<strong>"什么叫做完"</strong>的定义。
+</div>
+
+<h3>一、三段式主路径（本版的骨架）</h3>
+<div class="stage">
+  <div class="sg s1">
+    <div class="sn">STAGE 1 · 现场</div>
+    <div class="st">① 批量采集</div>
+    <div class="sd">走一圈，全部拍完。全程<strong>只按快门</strong>——不识别、不绑定、不弹窗、不做任何决策。照片进入项目的「待整理池」。</div>
+  </div>
+  <div class="sg s2">
+    <div class="sn">STAGE 2 · 现场随时 / 收工统一</div>
+    <div class="st">② 对应货品</div>
+    <div class="sd">系统按拍摄时序自动分组，OCR 给出<strong>建议</strong>，人做<strong>决定</strong>。拍一段就顺手清一段，剩下的留到收工时一次过——<strong>进度随时落盘，两处接着做</strong>。</div>
+  </div>
+  <div class="sg s3">
+    <div class="sn">STAGE 3 · 交付</div>
+    <div class="st">③ 打包输出</div>
+    <div class="sd">按清单生成交付包：ZIP（按货品分目录）+ PDF 联系表 + 清单对照表，微信分享或上传 WebDAV。</div>
+  </div>
+</div>
+
+<div class="card ok">
+  <div class="ct">v3.1 最重要的变化：「100% 对应」不再是达标条件</div>
+  v3.0 隐含了一个假设——<strong>清单里的每件货都必须有照片，缺口要一件件处理干净才能交付</strong>。按这个口径，几百件货里会有 40~100 件的缺口，逐件标记原因就是一项<strong>15~30 分钟的额外负担</strong>，而且必然做不完整。
+  <br><br>
+  v3.1 改成<strong>覆盖率达标制</strong>：
+  <ul style="margin:8px 0 0;">
+    <li><strong>达标线：清单覆盖率 ≥ 80%</strong>（有照片的货品数 / 清单货品数），且<strong>无未对应的已拍照片</strong>。</li>
+    <li>达标后<strong>缺口不再阻塞交付</strong>——缺口清单<strong>自动汇总进交付包</strong>，不需要人工逐件标记原因。</li>
+    <li>没达标的处理办法只有两条，且都必须由人显式选择：<strong>① 回去补拍（拍照时）② 强制导出并说明原因（收工后）</strong>。</li>
+  </ul>
+  <br>
+  为什么这个改动是对的：<strong>80% 本来就是业务上的验收线</strong>。让 APP 去追求一个业务上不需要的 100%，等于把成本转嫁给最忙的那个人。系统该做的是<strong>把缺口诚实地说出来</strong>，而不是假装它不存在、或者要求人消灭它。
+</div>
+
+<div class="card warn">
+  <div class="ct">v2.0 的定位错误：让机器当了决策者</div>
+  v2.0 把 OCR 当作「<strong>主路径引擎</strong>」——快门按下后 300ms，由机器决定这张照片归到哪件货。它虽然加了五道防线（分组互证、多候选消歧、四态归属、待核对闭环、可追溯），但本质上<strong>还是在赌 OCR 的精度</strong>——只要有一张照片被静默归错，错误就顺着流程流进了交付物。
+  <br><br>
+  更隐蔽的问题是：<strong>它把「整理」这件事切碎、塞进了拍摄的那一刻</strong>。预检员在现场虽然没被打断，但系统一直在替他做决策、算分组、写状态。整个 APP 的复杂度、异常场景、解释成本，都压在了现场那一秒里——而那恰恰是最不该有复杂度的地方。
+</div>
+
+<div class="card ok">
+  <div class="ct">v3.0 的定位：机器只建议，人做决定</div>
+  <strong>先批量整体拍照 → 然后统一对应货品 → 最后打包输出分享。</strong>
+  <br><br>
+  三个阶段物理隔离，各管各的，互不渗透：
+  <ul style="margin:8px 0 0;">
+    <li><strong>采集阶段，系统什么都不做。</strong>只有一个动作：把照片和时间戳写进本地库。零识别、零分组、零判定。预检员的动作从"掏手机→拍→塞回口袋"变成同样的事，但没有任何后台逻辑在替他决策。</li>
+    <li><strong>整理阶段，OCR 才登场——但只以"建议"的身份。</strong>它把识别结果、置信度、命中依据一并摆出来，人看一眼点一下。系统永远不替人写最终归属。</li>
+    <li><strong>交付阶段，只交付人确认过的。</strong>没被确认的照片不会出现在交付包的正片清单里——它们进「未使用」区并在对照表里列明。这是本版最强的一条保证。</li>
+  </ul>
+</div>
+
+<h3>二、变更对照</h3>
+<table>
+  <thead><tr><th style="width:110px">维度</th><th style="width:250px">v2.0（已废弃）</th><th style="width:230px">v3.0</th><th>v3.1（本版）</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>达标口径</strong></td>
+      <td class="del">不适用（机器自动归档）</td>
+      <td class="del">清单里的货品<strong>全部</strong>要有照片；缺一件就欠一件，必须逐件处理掉</td>
+      <td><strong>覆盖率 ≥ 80% 即达标</strong>；缺口自动汇总进交付包，不阻塞交付</td>
+    </tr>
+    <tr>
+      <td><strong>规模假设</strong></td>
+      <td class="del">未明确</td>
+      <td class="del">约 200 件 / 300~500 张</td>
+      <td><strong>几百件 / 600~1600 张 / 持续 1 天</strong></td>
+    </tr>
+    <tr>
+      <td><strong>整理时机</strong></td>
+      <td class="del">拍摄中（隐式）</td>
+      <td class="del">拍完全部，收工后统一整理</td>
+      <td><strong>现场随手清 + 收工统一过，两条路径共用一套数据</strong></td>
+    </tr>
+    <tr>
+      <td><strong>主路径</strong></td>
+      <td class="del">拍照 → 自动归档（两步）</td>
+      <td colspan="2"><strong>批量拍照 → 对应货品 → 打包交付（三段）</strong></td>
+    </tr>
+    <tr>
+      <td><strong>OCR 定位</strong></td>
+      <td class="del">主路径引擎 —— 它做决定</td>
+      <td colspan="2"><strong>智能辅助 —— 它只给建议，人做决定</strong></td>
+    </tr>
+    <tr>
+      <td><strong>归属写入时机</strong></td>
+      <td class="del">快门按下后 ~300ms（自动）</td>
+      <td colspan="2"><strong>人在整理页点「确认」的那一刻</strong></td>
+    </tr>
+    <tr>
+      <td><strong>决策者</strong></td>
+      <td class="del">机器</td>
+      <td colspan="2"><strong>人（系统只负责把决策变得便宜）</strong></td>
+    </tr>
+    <tr>
+      <td><strong>如果 OCR 错了</strong></td>
+      <td class="del">静默流入报告，只能靠 PDF 打标提示</td>
+      <td colspan="2"><strong>不可能流入</strong>——未经人确认的归属根本不存在，交付包里的每条归属都可追溯到"谁在什么时候确认的"</td>
+    </tr>
+    <tr>
+      <td><strong>现场操作</strong></td>
+      <td class="del">无感，但系统在替人决策</td>
+      <td colspan="2"><strong>采集全程无感</strong>——系统在采集期不做任何事</td>
+    </tr>
+    <tr>
+      <td><strong>相册导入</strong></td>
+      <td class="del">独立流程（因为要 OCR 归档）</td>
+      <td colspan="2"><strong>并入采集流程</strong>——相册照片直接进"待整理池"，与现场照片一视同仁</td>
+    </tr>
+    <tr>
+      <td><strong>默认首页</strong></td>
+      <td class="del">拍照页</td>
+      <td colspan="2"><strong>项目工作台</strong>（三段式进度 + 当前该去哪一步）</td>
+    </tr>
+    <tr>
+      <td><strong>风险性质</strong></td>
+      <td class="del">精度风险（不可控，只能缓解）</td>
+      <td colspan="2"><strong>效率风险（可控，靠整理页的 UI 设计解决）</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="card viol">
+  <div class="ct">把风险从"不可控"换成"可控"</div>
+  <table style="margin:10px 0 0;">
+    <thead><tr><th style="width:150px">风险</th><th>v2.0（精度风险）</th><th>v3.1（效率风险）</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>本质</strong></td>
+        <td>你无法保证 ML Kit 在反光、褶皱、污损的标签上不出错。这是一个<strong>统计学问题</strong>，只能降低概率，不能消除。</td>
+        <td>整理页设计得好，上千张照片半小时能过完；设计得差就要几小时。这是一个<strong>工程问题</strong>，可以被解决。</td>
+      </tr>
+      <tr>
+        <td><strong>失控点</strong></td>
+        <td>对用户而言是黑盒——错了也不知道，知道了也不知道错在哪张</td>
+        <td>完全透明——一眼能看到还剩多少没对应，进度条会动</td>
+      </tr>
+      <tr>
+        <td><strong>兜底手段</strong></td>
+        <td>只能"调阈值"糊弄，越调越玄</td>
+        <td>分组策略、批量确认、候选排序、覆盖率闸门——<strong>每一个都可以独立优化</strong></td>
+      </tr>
+      <tr>
+        <td><strong>极端情况</strong></td>
+        <td>OCR 全线失效 → 方案地基塌陷</td>
+        <td>OCR 全关 → 退化成一个「相册 + 指派 + 打包」工具，<strong>依然完全可用</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>三、那"统一对应"会不会变成一件苦差事？</h3>
+<p>这是本方案必须回答的问题——因为<strong>全部靠人确认</strong>，如果整理页不好用，就等于把 v2.0 的风险换成了一个更糟的体验。</p>
+<p>答案是把整理的单位从「张」提升到「组」，并用七种手段把人的操作次数压到最低：</p>
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:190px">手段</th><th>效果</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><strong>时序自动分组</strong></td><td>利用"走一段、站定、连拍 2~3 张"的现场规律，把 1200 张照片聚成约 400~500 组。<strong>人按组决策，不按张决策。</strong></td></tr>
+    <tr><td>2</td><td><strong>组代表图</strong></td><td>每组只看一张代表图，其余折叠。人眼的工作量 ÷3。</td></tr>
+    <tr><td>3</td><td><strong>建议置于组头</strong></td><td>卡片上直接显示 <code>建议：ABC-1024 · 92%</code>，人只需做「对 / 不对」二选一，不需要自己去找。</td></tr>
+    <tr><td>4</td><td><strong>相似建议合并成块</strong></td><td>建议相同的相邻组自动并成一个"待确认块"，一次点击确认整块（如 3 组都建议 ABC-1024 → 一次点掉）。</td></tr>
+    <tr><td>5</td><td><strong>一键确认全部高置信</strong></td><td>≥0.90 且组内一致的全部一次性确认。通常有 60~80% 的量能被这一下清掉。</td></tr>
+    <tr><td>6</td><td><strong>只显示未对应的</strong></td><td>整理页默认<strong>只显示还没对应上的</strong>——待确认的组、无建议的组、已拍未指派。已确定的收起来不占视线。</td></tr>
+    <tr><td>7</td><td><strong>候选前缀检索</strong></td><td>手动指派时，输入 2~3 个字符即出候选（Trie 前缀 + 编辑距离容错），扫码可直达。<strong>手动也不慢。</strong></td></tr>
+    <tr><td>8</td><td><strong>连贯拍摄的批量预期</strong><span class="tag t-green" style="margin-left:6px">v3.1 新增</span></td><td>采集时按时间连续的一段（如 10 分钟内）自动归一个「批次」（Burst），整理按批推进。<strong>整理页只需显示"还差几批"，不必面对上千张的全局数字</strong>——这对心理负担是决定性的。</td></tr>
+  </tbody>
+</table>
+
+<div class="card tip">
+  <div class="ct">一句话总结这一版的调整</div>
+  v2.0 问的是「<strong>怎么让机器不出错</strong>」——这是个没有确定答案的问题。<br>
+  v3.0 问的是「<strong>怎么让人觉得对一遍很便宜</strong>」——这是个可以用工程解决的问题。<br>
+  v3.1 补上了第三个问题：「<strong>付出多少才算够</strong>」——答案是 <strong>80% 覆盖率</strong>，不是 100%。把达标线定在业务真正的验收线上，而不是定在"理论上完美"上。
+</div>
+</section>
+
+<!-- ============ 1 ============ -->
+<section id="s1">
+<h2><span class="n">01</span> 需求理解与现场动线</h2>
+
+<h3>1.1 业务链路定位</h3>
+<p>本 APP 处在「<strong>预检监装报告</strong>」生产线的<strong>最上游取证环节</strong>——它不生产报告，只生产<strong>可信、有序、可追溯、已对应到货品的现场照片素材</strong>。</p>
+<table>
+  <thead><tr><th style="width:110px">角色</th><th>设备上</th><th>核心诉求</th><th>痛点</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>预检人员</strong><br><span class="tag t-navy">本 APP 用户</span></td>
+      <td>Android 手机，仓库现场</td>
+      <td>走到哪拍到哪，现场不用管整理；回到车里／办公室坐下，几分钟把照片对上号，直接交差</td>
+      <td>拍了几百张，事后根本对不上号；手上戴手套，腾不出手指头点屏幕；整理靠人肉回忆哪张是哪件货</td>
+    </tr>
+    <tr>
+      <td><strong>报告制作人员</strong><br><span class="tag t-blue">后端</span></td>
+      <td>PC，Office</td>
+      <td>拿到<strong>已归好货、按序排好</strong>的照片，直接排版出 PDF</td>
+      <td>拿到一堆 IMG_0231.jpg 无从下手；反复微信追问"这张是哪个货"</td>
+    </tr>
+    <tr>
+      <td><strong>业务/客户</strong></td><td>—</td><td>报告按时、可信</td><td>报告返工 → 交付延期</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>1.2 现场真实动线还原 <span class="tag t-blue">本次修订的依据</span></h3>
+<div class="card new">
+  <div class="ct">一次典型预检的完整实况（含整理环节）</div>
+<pre class="plain">08:30  拿到客户发来的货品清单（Excel，387 条），微信转发到手机 → 导入 APP 建项目
+08:45  进仓库。货已按托盘码好，散落在 A/B/C 三个区
+08:50  走到 A 区第一垛货跟前 → 掏出手机 → 拍 2~3 张 → 塞回口袋 → 走向下一件
+09:00  继续走 → 拍下一件 → 再下一件 …
+       ↑ 全程只有一个动作：掏手机 → 对准 → 拍 → 收起来 → 走向下一件
+12:00  午休前，随手点开整理页，把上午这一段（约 150 张）顺手清掉
+         用时约 12 分钟 —— 剩下的留着收工一起过
+13:00  下午继续拍 …（C 区有一件唛头被压住，挪开补拍）
+16:40  拍完，累计 640 张。离场，回到车上／门口台阶／办公室
+
+────── 这里是本次调整新增的关键段落 ──────
+
+16:45  坐下，掏出手机，打开项目 → 点「继续整理」
+       APP 已经自动做完了两件事（在用 WiFi 的这几分钟里）：
+         · 按拍摄时序把剩余照片按 45s 间隔聚成组
+         · 对未处理的组跑完 OCR，生成归属建议 + 置信度
+16:46  整理页打开。顶部：已对应 268 / 387 件 · 待处理 39 组
+       先点「一键确认高置信」→ 系统把 74 组（158 张）一次性归好
+       进度跳到：已对应 331 / 387 件
+16:52  剩下 39 组需要人工过一眼。卡片上是建议 + 缩略图。
+       对的直接点 ✓ 确认，整组归位；不对的点「改派」从候选里选
+16:58  39 组过完。顶部切到覆盖率视图：
+         清单 387 件 · 已拍 331 件 · 缺口 56 件 · 覆盖率 85.5%  [达标]
+       缺口清单已自动汇总，不需要逐件标原因
+17:00  点「生成交付包」
+17:02  ZIP + PDF 联系表 + 清单对照表 + 清单缺口.txt 生成完毕，微信发给报告员
+
+17:05  报告员收到 → 直接排版（缺口 56 件由他判断是"未装/短装"还是"补拍"）</pre>
+</div>
+
+<p><strong>关键观察（本次修订的核心依据）：</strong></p>
+<ul>
+  <li><strong>拍摄与整理在时间上是分离的，但不是"只能分离"。</strong>现场没有条件做完整整理，也不该在那时做——因为整理需要"停下来、看屏幕、做判断"，这三种行为在现场都不成立。<strong>但允许"顺手清一段"</strong>：趁换区、等车、午休的空档处理掉一段，能显著减轻收工后的负担。所以 v3.1 支持两条路径共用一套数据。</li>
+  <li><strong>整理的主场景仍是"坐下来过"</strong>：人坐着、双手空闲、视线在屏幕上、大概率有 WiFi。这意味着<strong>整理页的 UI 可以、也应该与采集页完全不同</strong>——一个要极简到什么都没有，一个要信息密集、操作高效。</li>
+  <li><strong>现场只需要一件事：按快门。</strong>任何在现场弹出的东西都是成本。</li>
+  <li><strong>整理需要四件事：</strong>看得清（大图缩略）、点得快（批量操作）、有对照（清单在旁边）、有退路（错了能改）。</li>
+  <li>拍摄是<strong>成组发生</strong>的：站在一件货前会连拍 2~5 张（唛头、整体、侧面、破损处）。<strong>这是整理阶段最重要的可利用规律。</strong></li>
+  <li>清单顺序 ≠ 现场动线。清单按客户口径排，现场按仓库码放排。所以<strong>不能拿清单顺序当先验</strong>。</li>
+  <li>存在清单外的货（临时加货、清单漏录），也存在找不到的货（压在垛底、已被提走）。整理阶段必须能表达"不存在的货"。</li>
+  <li>⚠️ <strong>规模是"一整天 + 几百件 + 上千张"</strong>：这意味着整理页不能只考虑"好不好用"，还要考虑<strong>连续作业几小时后人还有没有耐心</strong>（见 R1b），以及"面对上千张时的心理压力"——所以覆盖率仪表与批次分组是必需而非锦上添花。</li>
+  <li>⚠️ <strong>80% 覆盖率是业务验收线，不是失败线</strong>：现场本来就拍不满，方案设计必须把"缺口是常态"当成前提，而不是把缺口当成要清零的异常。</li>
+</ul>
+
+<h3>1.3 现场环境约束</h3>
+<div class="grid3">
+  <div class="card"><div class="ct">🌐 网络</div>仓库深处/金属货架屏蔽，4G 信号弱甚至无信号。<strong>采集必须完全离线</strong>，OCR 与上传都放到有网络时（整理阶段）再做。</div>
+  <div class="card"><div class="ct">💡 光线</div>顶灯昏暗、逆光、外包装反光。<strong>闪光灯默认关闭</strong>，需曝光补偿与手动对焦。</div>
+  <div class="card"><div class="ct">🧤 操作</div>常戴手套、单手操作、手机挂腕带。<strong>采集页大按钮、零输入</strong>；整理页也需要大点击区。</div>
+  <div class="card"><div class="ct">📦 数量</div>单次预检<strong>几百件</strong>货，照片 <strong>600~1600 张</strong>。<strong>列表虚拟滚动</strong>，缩略图必须缓存；整理页要能扛住上千张的组织。</div>
+  <div class="card"><div class="ct">🔋 续航</div>连续作业<strong>一整天（6~8 小时）</strong>。<strong>采集期禁止跑 OCR、禁止预览帧分析、禁止轮询</strong>——这是采集期唯一的技术红线。</div>
+  <div class="card"><div class="ct">🏷️ 标签</div>编码多为印刷唛头/条码贴纸，会污损、褶皱、倾斜、被遮挡、手写。<strong>OCR 必然会失败一部分</strong>——所以它只能做建议。</div>
+</div>
+
+<h3>1.4 需求 → 功能映射</h3>
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:200px">原始需求</th><th>功能落点</th><th style="width:70px">优先级</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>使用人员为仓库预检人员</td><td>双场景 UI：现场向采集页（大控件、零输入）+ 桌面向整理页（信息密集、批量操作）</td><td><span class="tag t-red">P0</span></td></tr>
+    <tr><td>2</td><td>拍照 + 整理，发给报告制作人员</td><td>采集模块 + 整理工作台 + 交付模块（ZIP / PDF 联系表 / 清单对照表）</td><td><span class="tag t-red">P0</span></td></tr>
+    <tr><td>3</td><td>货品清单是预检和拍照依据</td><td>清单导入 + <strong>作为指派候选字典</strong> + <strong>清单缺口视图</strong>（哪些货还没照片）</td><td><span class="tag t-red">P0</span></td></tr>
+    <tr><td>4</td><td>照片与货品建立对应，可用 AI 提取编码</td><td><strong>整理阶段人工指派为主 + OCR 建议为辅</strong>（建议可见、可解释、可忽略）</td><td><span class="tag t-red">P0</span></td></tr>
+    <tr><td>5</td><td>按货品编码检索历史照片</td><td>全局搜索 + 扫码直达 + 跨项目检索 <span class="tag t-blue">同时服务于整理阶段的快速指派</span></td><td><span class="tag t-amber">P1</span></td></tr>
+    <tr><td>6</td><td>上传 WebDAV 网盘同步</td><td>后台上传队列 + 断点重试 + 状态可视化</td><td><span class="tag t-amber">P1</span></td></tr>
+    <tr><td>7</td><td>简单、友好、直接</td><td>采集页<strong>打开即相机、全程零输入零弹窗</strong>；整理页<strong>默认只显示缺口、一键批量</strong></td><td><span class="tag t-red">P0</span></td></tr>
+    <tr><td>8</td><td>内部使用，免登录</td><td>无账户体系；WebDAV 凭据本机加密存</td><td><span class="tag t-red">P0</span></td></tr>
+    <tr><td>9</td><td>按清单整理打包，微信发送</td><td>按清单结构打包 ZIP（每货品一目录）+ PDF 联系表 + 系统分享直达微信</td><td><span class="tag t-red">P0</span></td></tr>
+  </tbody>
+</table>
+
+<h3>1.5 使用场景的二元性</h3>
+<div class="grid2">
+  <div class="card">
+    <div class="ct">🏭 场景 A · 采集（现场）</div>
+    <div class="kv">
+      <div class="k">姿势</div><div>站立 / 走动 / 单手</div>
+      <div class="k">注意力</div><div>在货上，不在屏幕上</div>
+      <div class="k">手</div><div>戴手套，可能拿着一件货</div>
+      <div class="k">目的</div><div><strong>尽可能快地把现场记录下来</strong></div>
+      <div class="k">时长</div><div>1~3 小时连续</div>
+      <div class="k">设计目标</div><div>每个动作 ≤ 1 秒，全程零决策</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">🪑 场景 B · 整理（坐下）</div>
+    <div class="kv">
+      <div class="k">姿势</div><div>坐着 / 双手空闲 / 手机或平板</div>
+      <div class="k">注意力</div><div>在屏幕上</div>
+      <div class="k">手</div><div>裸手，可精细点击</div>
+      <div class="k">目的</div><div><strong>尽可能快地把照片对上号</strong></div>
+      <div class="k">时长</div><div>5~20 分钟</div>
+      <div class="k">设计目标</div><div>每组的处理 ≤ 2 秒，支持批量</div>
+    </div>
+  </div>
+</div>
+<div class="card tip">
+  <div class="ct">设计含义</div>
+  这不是"一个 APP 加一个整理页"，而是<strong>一个 APP 里放了两条完全不同的人机交互逻辑</strong>。采集页追求"无界面"，整理页追求"高效率界面"。把这两者混在一起（v2.0 的做法）会两边都不讨好。
+</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="s2">
+<h2><span class="n">02</span> 设计原则与关键决策</h2>
+
+<h3>2.1 十条铁律</h3>
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:210px">原则</th><th>含义与验证方式</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td><td><strong>三段式隔离</strong></td>
+      <td>采集 / 整理 / 交付三阶段互不渗透。验证：采集页代码里不出现任何 OCR 调用；整理页里不出现相机预览。</td>
+    </tr>
+    <tr>
+      <td>2</td><td><strong>采集期零智能</strong></td>
+      <td>采集时系统只做一件事——把照片和时间戳落盘。不识别、不分组、不判定、不联网。验证：飞行模式下采集全流程无阻碍。</td>
+    </tr>
+    <tr>
+      <td>3</td><td><strong>人做决定，机器给建议</strong></td>
+      <td>任何进入交付包的归属，必须有一条"人确认"的记录（<code>assignment.confirmed_at IS NOT NULL</code>）。验证：交付包里不存在 confirmed_at 为空的归属。</td>
+    </tr>
+    <tr>
+      <td>4</td><td><strong>建议必须可解释</strong></td>
+      <td>每条 OCR 建议都带置信度 + 命中依据（来自哪个 token、匹配方式）。禁止出现"系统认为是 X"这种无依据的建议。</td>
+    </tr>
+    <tr>
+      <td>5</td><td><strong>OCR 可完全关闭</strong></td>
+      <td>设置里一个开关关掉 OCR，全流程照常可用（纯手动指派模式）。验证：关闭后整理页仍能完成 <strong>400 件货</strong>的全部指派（≤45 min）。</td>
+    </tr>
+    <tr>
+      <td>6</td><td><strong>整理单元是"组"不是"张"</strong></td>
+      <td>人按组决策，机器负责把张聚成组。分组错了要能手动合并/拆分——分组是建议，不是约束。</td>
+    </tr>
+    <tr>
+      <td>7</td><td><strong>只显示缺口</strong></td>
+      <td>整理页默认隐藏已确定的项，把注意力集中在未对应的照片和未拍照的货品上。</td>
+    </tr>
+    <tr>
+      <td>8</td><td><strong>离线优先</strong></td>
+      <td>采集、整理、打包全部本地完成。网络只用于 WebDAV 上传与微信分享。</td>
+    </tr>
+    <tr>
+      <td>9</td><td><strong>文件名自带归属</strong></td>
+      <td>交付时按 <code>{项目}_{序号}_{编码}_{序号}.jpg</code> 命名（生成在交付包内，不改动原始文件）。照片被单独拷走也丢不了归属。</td>
+    </tr>
+    <tr>
+      <td>10</td><td><strong>不申请"所有文件访问"</strong></td>
+      <td>不用 MANAGE_EXTERNAL_STORAGE。用 App 私有外置目录 + 系统分享 / SAF 导出。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.2 关键决策与取舍</h3>
+<table>
+  <thead><tr><th style="width:170px">决策点</th><th style="width:190px">选定方案</th><th>理由 / 放弃的方案</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>整理时机</strong></td>
+      <td>拍完统一整理</td>
+      <td>放弃"边拍边整理"。现场不具备整理条件（站着、戴手套、看货）。统一整理时人坐着、有网、注意力在屏幕上，效率高一个数量级。</td>
+    </tr>
+    <tr>
+      <td><strong>归属决策者</strong></td>
+      <td>人</td>
+      <td>放弃"OCR 自动归档"。精度风险不可控，且错误静默流入交付物是业务不可接受的风险。</td>
+    </tr>
+    <tr>
+      <td><strong>OCR 触发时机</strong></td>
+      <td>采集结束后后台批量跑</td>
+      <td>放弃"整理页实时识别"（人等着，每一张都是延迟）。放弃"采集时实时识别"（耗电、发热、拖慢快门）。<br><strong>最佳窗口：采集结束后、整理开始前的这段时间</strong>（人正在走路/换场/坐下，手机可以安静地跑 OCR）。</td>
+    </tr>
+    <tr>
+      <td><strong>建议粒度</strong></td>
+      <td>组级建议</td>
+      <td>组内多张 OCR 结果做加权投票，得到一个组级建议 + 组级置信度。张级建议只在"拆分组"后的单张指派里用到。</td>
+    </tr>
+    <tr>
+      <td><strong>分组依据</strong></td>
+      <td>拍摄时序（间隔 ≤ 45s 归同组）+ 可手动合并/拆分</td>
+      <td>放弃"清单顺序邻近"（现场动线与清单顺序无关）。分组结果必须可人工修正——因为人是最终决策者。</td>
+    </tr>
+    <tr>
+      <td><strong>分组错误的兜底</strong></td>
+      <td>合并 / 拆分 / 移出 三个操作</td>
+      <td>走神拍错一张、或一件货拍了两段（中间插了别的货），都能修正。</td>
+    </tr>
+    <tr>
+      <td><strong>手动指派方式</strong></td>
+      <td>候选列表（前缀检索）+ 搜索 + 扫码 + 新建货品</td>
+      <td>四种入口覆盖全部情况。候选列表基于清单做 Trie 索引，输入 2~3 字符即出。</td>
+    </tr>
+    <tr>
+      <td><strong>相册导入</strong></td>
+      <td>并入采集流程</td>
+      <td>相册照片直接进"待整理池"，与现场照片一视同仁。区别只在于：相册照片没有可靠的拍摄时序（可能全是同一时间戳），所以<strong>不参与时序分组</strong>，独立成组。用户可在整理页手动合并。</td>
+    </tr>
+    <tr>
+      <td><strong>一张照片拍到多件货</strong></td>
+      <td>主归属 + 附加关联</td>
+      <td>数据模型预留多对多关联表。UI 上先只做单选（P0），多选留到 P2。</td>
+    </tr>
+    <tr>
+      <td><strong>落选照片</strong></td>
+      <td>「未使用」区 + 对照表列明</td>
+      <td>没被指派或没被确认的照片不进正片，但也不删——放进交付包的 <code>_未使用/</code> 目录并在对照表里列明。给报告员一个"这些我看到了但没用"的交代。</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="card warn">
+  <div class="ct">一条需要明确说清的红线</div>
+  <strong>采集期绝对不能跑 OCR。</strong>连续 2~3 小时、数百次快门的现场作业，如果每张都跑识别，会带来：发热降频（相机变卡）、电量崩（续航从 4h 掉到 1.5h）、快门延迟（错失拍摄时机）。<br><br>
+  这不是"优化"，是<strong>架构约束</strong>——所以采集页和 OCR 之间不能有任何代码路径。
+</div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="s3">
+<h2><span class="n">03</span> 总体架构与技术选型</h2>
+
+<h3>3.1 分层架构</h3>
+<p>架构按<strong>三个阶段</strong>划分领域层，这是本版最显著的结构变化——采集、整理、OCR 建议三者之间<strong>没有调用关系</strong>，只有数据流。</p>
+
+<div class="card">
+  <div class="ct">表现层 UI</div>
+  <div class="grid3" style="margin-top:6px;">
+    <div style="font-size:13px;"><strong>采集簇</strong><br><span style="color:var(--muted)">项目列表 · 工作台 · 清单导入向导 · <strong>采集页</strong> · 批次摘要</span></div>
+    <div style="font-size:13px;"><strong>整理簇</strong><br><span style="color:var(--muted)"><strong>整理页（核心）</strong> · 指派面板 · 分组操作 · 缺口视图 · 货品详情</span></div>
+    <div style="font-size:13px;"><strong>交付簇</strong><br><span style="color:var(--muted)"><strong>交付页</strong> · 打包配置 · 分享 · 上传状态 · 检索 · 设置</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ct">领域层 Service（无 UI 依赖，可单测）</div>
+  <table style="margin:6px 0 0;">
+    <thead><tr><th style="width:200px">服务</th><th style="width:100px">所属阶段</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><code>CaptureService</code></td><td><span class="tag t-navy">采集</span></td><td>相机控制、连拍、曝光/对焦、原图落盘、写 <code>photo</code> 记录。<strong>唯一不调用任何识别能力的服务。</strong></td></tr>
+      <tr><td><code>GroupingService</code></td><td><span class="tag t-navy">采集后</span></td><td>按拍摄时序聚类成组；提供合并/拆分/移出的重算能力</td></tr>
+      <tr><td><code>SuggestService</code></td><td><span class="tag t-violet">整理前</span></td><td>OCR 批量识别 → 组级建议合成 → 置信度与依据。<strong>可整体开关，关闭后其余流程无变化。</strong></td></tr>
+      <tr><td><code>AssignService</code></td><td><span class="tag t-orange">整理</span></td><td>指派、批量确认、撤销、决策记录写入。归属的唯一合法写入口。</td></tr>
+      <tr><td><code>ChecklistService</code></td><td><span class="tag t-orange">整理</span></td><td>清单导入解析、列映射、校验、缺口计算、覆盖率统计</td></tr>
+      <tr><td><code>ExportService</code></td><td><span class="tag t-green">交付</span></td><td>ZIP 组装、PDF 联系表渲染、清单对照表、命名规范应用</td></tr>
+      <tr><td><code>SyncService</code></td><td><span class="tag t-green">交付</span></td><td>WebDAV 上传队列、退避重试、断点续传、状态回写</td></tr>
+      <tr><td><code>SearchService</code></td><td><span class="tag t-gray">通用</span></td><td>编码检索、Trie 候选索引、编辑距离容错</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="ct">数据层 &amp; 平台层</div>
+  <div style="font-size:13.5px;">
+    <strong>数据</strong>：drift(SQLite) 结构化数据 · App 私有外置目录存原图与缩略图 · 交付包临时目录 · WebDAV 客户端<br>
+    <strong>平台通道</strong>：<code>camera</code> / <code>camera_avfoundation</code> · <code>google_mlkit_text_recognition</code> · <code>share_plus</code> · <code>archive</code> · <code>pdf</code> + <code>printing</code> · <code>path_provider</code> · <code>flutter_secure_storage</code>
+  </div>
+</div>
+
+<h3>3.2 依赖选型</h3>
+<table>
+  <thead><tr><th style="width:180px">能力</th><th style="width:210px">选型</th><th>理由 / 备注</th></tr></thead>
+  <tbody>
+    <tr><td>跨端框架</td><td><code>flutter 3.x</code> + Dart 3</td><td>一套代码、稳定相机生态、原生控件可桥接</td></tr>
+    <tr><td>状态管理</td><td><code>riverpod</code></td><td>编译期安全、易测；整理页状态复杂，需要强约束</td></tr>
+    <tr><td>路由</td><td><code>go_router</code></td><td>声明式，深链（扫码直达货品详情）</td></tr>
+    <tr><td>本地数据库</td><td><code>drift</code>（SQLite）</td><td>类型安全、迁移工具成熟、支持复杂查询（缺口视图需要 join + 聚合）</td></tr>
+    <tr><td>相机</td><td><code>camera</code></td><td>支持连拍、手动曝光/对焦、原始分辨率保存</td></tr>
+    <tr><td>图像处理</td><td><code>image</code>（Dart）</td><td>缩略图生成、裁剪、EXIF 保留；批量操作放 isolate</td></tr>
+    <tr><td>OCR <span class="tag t-violet">可选</span></td><td><code>google_mlkit_text_recognition</code></td><td>纯离线、中文支持好、无需联网。<strong>整个能力被 <code>SuggestService</code> 封装，可整体禁用。</strong></td></tr>
+    <tr><td>文件压缩</td><td><code>archive</code></td><td>纯 Dart ZIP 生成，进度可回调</td></tr>
+    <tr><td>PDF 生成</td><td><code>pdf</code> + <code>printing</code></td><td>联系表排版与内置预览分享</td></tr>
+    <tr><td>系统分享</td><td><code>share_plus</code></td><td>调起系统分享面板 → 微信</td></tr>
+    <tr><td>WebDAV</td><td><code>webdav_client</code></td><td>标准协议，兼容坚果云/Nextcloud/群晖</td></tr>
+    <tr><td>凭据存储</td><td><code>flutter_secure_storage</code></td><td>KeyStore 加密，不落明文</td></tr>
+    <tr><td>Excel 解析</td><td><code>excel</code> + <code>csv</code></td><td>读取客户发来的清单；CSV 兜底</td></tr>
+    <tr><td>条码扫描</td><td><code>mobile_scanner</code></td><td>整理阶段"扫码直达货品"</td></tr>
+    <tr><td>权限</td><td><code>permission_handler</code></td><td>仅请求相机 + 相册读取（相册导入用）</td></tr>
+  </tbody>
+</table>
+
+<h3>3.3 工程目录结构</h3>
+<pre><span class="c">// 目录按「三阶段」组织，一眼能看出代码属于哪个阶段</span>
+lib/
+├── main.dart
+├── app/                     路由、主题、全局 Provider
+├── core/                    常量、日志、错误类型、扩展
+├── data/
+│   ├── db/                  drift 表定义 + DAO
+│   ├── repo/                仓储实现（唯一允许写 DB 的地方）
+│   ├── fs/                  本地文件布局、缩略图、命名规则
+│   └── webdav/              WebDAV 客户端 + 上传队列持久化
+├── domain/
+│   ├── model/               领域实体（与 drift 表解耦）
+│   ├── capture/             <span class="k">CaptureService</span> —— 相机与落盘
+│   ├── grouping/            <span class="k">GroupingService</span> —— 时序聚类
+│   ├── suggest/             <span class="k">SuggestService</span> —— OCR 建议（可整体禁用）
+│   ├── assign/              <span class="k">AssignService</span> —— 归属决策（唯一写入口）
+│   ├── checklist/           清单导入、列映射、缺口计算
+│   ├── export/              ZIP / PDF / manifest
+│   └── search/              检索、Trie 候选索引
+├── ui/
+│   ├── project/             项目列表、工作台
+│   ├── checklist/           导入向导
+│   ├── capture/             <span class="k">采集页（零 UI）</span>
+│   ├── organize/            <span class="k">整理页（核心）+ 指派面板</span>
+│   ├── deliver/             交付页、分享、上传状态
+│   ├── search/
+│   └── settings/
+└── platform/                相机 / MLKit / 分享 / 压缩 的平台封装</pre>
+
+<div class="card tip">
+  <div class="ct">目录结构里的一条硬约束</div>
+  <code>domain/capture/</code> <strong>不得 import <code>domain/suggest/</code></strong>。这条约束用 lint 规则强制——它是"采集期零智能"原则在代码层面的落实。任何人想把 OCR 塞进采集流程，编译期就会撞墙。
+</div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="s4">
+<h2><span class="n">04</span> 信息架构与页面设计</h2>
+
+<h3>4.1 导航结构</h3>
+<p>三个阶段的导航入口挂在<strong>项目工作台</strong>上，项目内部用底部 Tab 直接切换阶段——这样预检员永远知道自己在哪一步。</p>
+<pre class="plain">App 启动
+  └─ 项目列表页                                  ← App 首页
+       └─ 项目工作台                             ← 三段式进度总览
+            ├─ [清单] 清单导入向导（首次必做）
+            ├─ Tab 1 · 概览        三段进度环 + 缺口摘要 + 快捷入口
+            ├─ Tab 2 · 采集        打开即全屏相机（零 UI）
+            ├─ Tab 3 · 整理        分组卡片流（核心工作台）★
+            ├─ Tab 4 · 交付        打包配置 + 生成 + 分享 ★
+            └─ [检索] 全局搜索（也作为整理阶段的快速指派入口）
+                     设置页（WebDAV、OCR 开关、每品张数、画质）</pre>
+
+<h3>4.2 页面清单</h3>
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:180px">页面</th><th style="width:80px">阶段</th><th>关键设计点</th></tr></thead>
+  <tbody>
+    <tr><td>P1</td><td>项目列表页</td><td><span class="tag t-gray">全局</span></td><td>每项目一张卡：名称、日期、采集/整理/交付三格微型进度条。新建项目 = 导入清单</td></tr>
+    <tr><td>P2</td><td>项目工作台</td><td><span class="tag t-gray">全局</span></td><td>三段式进度可视化，<strong>自动判断"你现在该去哪一步"</strong>并高亮该 Tab</td></tr>
+    <tr><td>P3</td><td>清单导入向导</td><td><span class="tag t-navy">采集前</span></td><td>选文件 → 预览 → <strong>列映射</strong>（哪列是编码/名称/数量）→ 校验报告 → 确认导入</td></tr>
+    <tr><td>P4</td><td><strong>采集页</strong></td><td><span class="tag t-navy">采集</span></td><td><strong>全屏相机，UI 只有三样东西</strong>：顶部张数、底部胶片条、快门键。零弹窗零输入</td></tr>
+    <tr><td>P5</td><td>批次摘要（轻）</td><td><span class="tag t-navy">采集</span></td><td>结束一次采集后的小结：本次 N 张、累计 M 张、[继续拍] / [去整理]</td></tr>
+    <tr><td>P6</td><td><strong>整理页 ★</strong></td><td><span class="tag t-orange">整理</span></td><td>分组卡片流 + 顶部进度 + 一键确认高置信 + 缺口视图。本方案的核心界面</td></tr>
+    <tr><td>P7</td><td>指派面板（弹层）</td><td><span class="tag t-orange">整理</span></td><td>半屏。候选列表（前缀检索）/ 搜索 / 扫码 / [创建为新货品]</td></tr>
+    <tr><td>P8</td><td>货品详情 / 补拍</td><td><span class="tag t-orange">整理</span></td><td>某件货的所有照片；报告员要求补拍时的定向入口</td></tr>
+    <tr><td>P9</td><td><strong>交付页 ★</strong></td><td><span class="tag t-green">交付</span></td><td>打包内容勾选 + 目录结构预览 + 生成 + 分享。未闭环项在此拦截</td></tr>
+    <tr><td>P10</td><td>交付结果 &amp; 分享</td><td><span class="tag t-green">交付</span></td><td>生成结果（体积、文件数）+ 分享到微信 + 上传 WebDAV + 历史交付包</td></tr>
+    <tr><td>P11</td><td>检索页</td><td><span class="tag t-gray">通用</span></td><td>输入编码（或扫码）→ 命中货品的全部照片；可跨项目</td></tr>
+    <tr><td>P12</td><td>设置页</td><td><span class="tag t-gray">通用</span></td><td>WebDAV 配置（测试连接）、<strong>OCR 建议开关</strong>、每品张数提醒、画质、清缓存</td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 关键界面线框</h3>
+
+<div class="wire">
+  <div class="wt">P4 · 采集页 —— 全屏相机，UI 元素只有三个</div>
+  <div class="wb">
+    <div class="phone">
+      <div class="scr">
+        <div class="camview">
+          <div style="background:rgba(0,0,0,.5);padding:5px 8px;display:flex;justify-content:space-between;font-size:9.5px;">
+            <span>◀ A 区 · 本次 128 张</span><span>01:24:30</span>
+          </div>
+          <div class="mid">
+            <div style="text-align:center;line-height:1.9;">
+              ┌ 取景框 ┐<br>
+              <span style="font-size:9px;">对准货品唛头，连续拍摄</span><br>
+              <span style="font-size:9px;color:#5d7b90;">不需要选货品 · 不需要输入</span>
+            </div>
+          </div>
+          <div class="film">
+            <i></i><i></i><i></i><i></i><i></i>
+            <span class="cnt">128</span>
+          </div>
+          <div class="shutter"></div>
+          <div style="height:74px;"></div>
+        </div>
+        <div class="bb" style="background:#1c2b3a;border-top-color:#2b3d4f;">
+          <div style="color:#7fd1e8;font-weight:700;">128 张</div>
+          <div style="color:#8fa6b8;">|</div>
+          <div style="color:#8fa6b8;">结束采集</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:inline-block;vertical-align:top;max-width:calc(100% - 290px);margin:8px 0 8px 14px;font-size:13px;line-height:1.8;">
+      <strong>这一页的全部设计目标：不干扰。</strong>
+      <ul style="margin:6px 0;">
+        <li>顶部只有「张数 + 时长」，没有识别结果、没有建议、没有任何需要理解的信息</li>
+        <li>底部胶片条显示最近 5 张——<strong>只用于"我刚才拍了没有"的确认</strong>，不显示归属</li>
+        <li>快门键 48dp 圆钮，戴手套可点；右侧可上滑切换前后摄，长按连拍</li>
+        <li><strong>没有任何 loading、没有任何 toast、没有任何确认框</strong></li>
+        <li>息屏/来电/切后台自动暂停采集，回来后继续同批次，进度不丢</li>
+        <li>「结束采集」在右下角，需要长按 1 秒——防误触，但不需要二次确认弹窗</li>
+      </ul>
+      <div class="card warn" style="margin:8px 0 0;padding:10px 12px;font-size:12.5px;">
+        <strong>反面清单：</strong>这一页<strong>不允许</strong>出现「识别中…」「已归档」「置信度」「候选列表」这类任何与整理相关的元素。它们属于下一个阶段。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wire">
+  <div class="wt">P6 · 整理页 —— 全案核心：把"对一遍"变便宜</div>
+  <div class="wb">
+    <div class="phone">
+      <div class="scr">
+        <div class="sb"><span>整理 · 万象2026-0912</span><span>▓▓▓ 84%</span></div>
+        <div style="background:#fff;padding:7px 8px;border-bottom:1px solid #e6eaee;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#0d2b45;">
+            <span>已对应 268 / 387 件</span><span style="color:#c8452f;">待处理 39</span>
+          </div>
+          <div style="height:5px;background:#e9edf1;border-radius:3px;margin-top:5px;overflow:hidden;">
+            <div style="width:73%;height:100%;background:linear-gradient(90deg,#2f855a,#38a169);"></div>
+          </div>
+          <div style="display:flex;gap:5px;margin-top:7px;">
+            <div style="flex:2;background:#0d2b45;color:#fff;border-radius:5px;text-align:center;font-size:9.5px;padding:5px 0;font-weight:700;">⚡ 一键确认高置信 (74)</div>
+            <div style="flex:1;background:#f0f2f5;color:#4a5568;border-radius:5px;text-align:center;font-size:9.5px;padding:5px 0;">缺口 26</div>
+          </div>
+        </div>
+        <div class="bd" style="padding:6px;">
+          <div style="font-size:9px;color:#8b98a6;margin:2px 0 4px;">待确认 · 按拍摄顺序</div>
+
+          <div class="row" style="padding:5px 6px;">
+            <div class="thumb">📷</div>
+            <div class="g">
+              <div class="t1">NBA-002 · 牛皮纸箱 200×150</div>
+              <div class="t2">3 张 &nbsp;·&nbsp; <span style="color:#2b6cb0;font-weight:700;">建议 ABC-1024 · 94%</span></div>
+            </div>
+            <div style="display:flex;gap:3px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#e8f5ee;color:#2f855a;text-align:center;line-height:20px;font-size:11px;font-weight:700;">✓</div>
+              <div style="width:20px;height:20px;border-radius:50%;background:#f0f2f5;color:#7a8794;text-align:center;line-height:20px;font-size:10px;">⇄</div>
+            </div>
+          </div>
+
+          <div class="row" style="padding:5px 6px;">
+            <div class="thumb">📷</div>
+            <div class="g">
+              <div class="t1">纸箱 · 唛头被压住</div>
+              <div class="t2">2 张 &nbsp;·&nbsp; <span style="color:#b7791f;font-weight:700;">建议 DEF-2001 · 61%</span></div>
+            </div>
+            <div style="display:flex;gap:3px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#e8f5ee;color:#2f855a;text-align:center;line-height:20px;font-size:11px;font-weight:700;">✓</div>
+              <div style="width:20px;height:20px;border-radius:50%;background:#f0f2f5;color:#7a8794;text-align:center;line-height:20px;font-size:10px;">⇄</div>
+            </div>
+          </div>
+
+          <div class="row" style="padding:5px 6px;border-color:#f0c98a;background:#fffdf5;">
+            <div class="thumb">📷</div>
+            <div class="g">
+              <div class="t1">3 组建议相同 → 合并确认</div>
+              <div class="t2">共 7 张 &nbsp;·&nbsp; <span style="color:#2b6cb0;font-weight:700;">全部建议 GHI-3300</span></div>
+            </div>
+            <div style="width:20px;height:20px;border-radius:50%;background:#e8f5ee;color:#2f855a;text-align:center;line-height:20px;font-size:11px;font-weight:700;">✓</div>
+          </div>
+
+          <div class="row" style="padding:5px 6px;border-color:#f3c0c0;background:#fdf5f5;">
+            <div class="thumb">📷</div>
+            <div class="g">
+              <div class="t1" style="color:#c53030;">无识别结果</div>
+              <div class="t2">4 张 &nbsp;·&nbsp; <span style="color:#c53030;">标签反光 / 清单外货品</span></div>
+            </div>
+            <div style="width:20px;height:20px;border-radius:50%;background:#fdeaea;color:#c53030;text-align:center;line-height:20px;font-size:10px;">?</div>
+          </div>
+
+          <div class="row" style="padding:5px 6px;opacity:.6;">
+            <div class="thumb">✓</div>
+            <div class="g">
+              <div class="t1">已确认 96 组</div>
+              <div class="t2">点击展开查看 · 可撤销</div>
+            </div>
+            <div class="pill p-g">▾</div>
+          </div>
+        </div>
+        <div class="bb">
+          <div>概览</div><div>采集</div><div class="on">整理<span class="badge">47</span></div><div>交付</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:inline-block;vertical-align:top;max-width:calc(100% - 290px);margin:8px 0 8px 14px;font-size:13px;line-height:1.8;">
+      <strong>这一页要解决的全部问题：让上千张照片的对应工作在可接受的时间内完成。</strong>
+      <ul style="margin:6px 0;">
+        <li><strong>顶部进度条 + 覆盖率仪表</strong>是唯一的"焦虑源"——前者回答"还剩多少"，后者回答"拍得够不够"</li>
+        <li><strong>「一键确认高置信」是第一优先动作</strong>，放在最显眼的位置。它一次清掉 60~80% 的量</li>
+        <li><strong>每张卡片 = 一个组</strong>，不是一张照片。缩略图取组代表图</li>
+        <li><strong>建议直接印在卡片上</strong>（蓝色），带百分比。人不需要自己去"找"答案，只需要"判断"</li>
+        <li><strong>两个按钮：✓ 确认 / ⇄ 改派。</strong>确认一点即整组归位；改派打开指派面板</li>
+        <li><strong>相似建议自动合并</strong>（黄底那张）：3 组都建议 GHI-3300 → 合成一张卡，一次确认 7 张</li>
+        <li><strong>无建议的用红底显性化</strong>，不藏在列表深处</li>
+        <li><strong>已确认的收起折叠</strong>，不占视线，但可展开撤销</li>
+        <li><strong>底部 Tab 带红色角标 47</strong>——即使切到别的 Tab，也知道整理还没做完</li>
+      </ul>
+      <div class="card ok" style="margin:8px 0 0;padding:10px 12px;font-size:12.5px;">
+        <strong>为什么不做左滑手势？</strong>左滑确认/右滑改派看起来更炫，但：现场手可能湿、戴过手套残留、手机戴壳。手势的误触成本远高于一个 20dp 的圆钮。<strong>点按优于滑动</strong>——这是给真实用户做的，不是给 demo 做的。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wire">
+  <div class="wt">P9 · 交付页 —— 打包内容可勾选，未闭环项在此拦截</div>
+  <div class="wb">
+    <div class="phone">
+      <div class="scr">
+        <div class="sb"><span>交付 · 万象2026-0912</span><span>▓▓▓ 84%</span></div>
+        <div class="bd" style="padding:7px;">
+          <div class="card ok" style="margin:0 0 6px;padding:7px 8px;border-radius:6px;">
+            <div style="font-size:10px;font-weight:700;color:#2f855a;">✓ 可以交付</div>
+            <div style="font-size:9px;color:#4a5568;margin-top:2px;">覆盖率 85.5%（≥80% 达标）；无未确认归属</div>
+          </div>
+
+          <div style="font-size:9px;color:#8b98a6;margin:6px 0 3px;">打包内容</div>
+            <div class="row" style="padding:5px 6px;"><div style="width:14px;height:14px;background:#2f855a;border-radius:3px;color:#fff;font-size:9px;text-align:center;line-height:14px;">✓</div><div class="g"><div class="t1">原始照片（按货品分目录）</div><div class="t2">640 张 · 预计 1.1 GB</div></div></div>
+          <div class="row" style="padding:5px 6px;"><div style="width:14px;height:14px;background:#2f855a;border-radius:3px;color:#fff;font-size:9px;text-align:center;line-height:14px;">✓</div><div class="g"><div class="t1">PDF 联系表（按货品分节）</div><div class="t2">每件货一页 · 含编码与张数</div></div></div>
+          <div class="row" style="padding:5px 6px;"><div style="width:14px;height:14px;background:#2f855a;border-radius:3px;color:#fff;font-size:9px;text-align:center;line-height:14px;">✓</div><div class="g"><div class="t1">清单对照表 (xlsx)</div><div class="t2">含"缺口"56 项标注</div></div></div>
+          <div class="row" style="padding:5px 6px;"><div style="width:14px;height:14px;background:#2f855a;border-radius:3px;color:#fff;font-size:9px;text-align:center;line-height:14px;">✓</div><div class="g"><div class="t1">清单缺口.txt</div><div class="t2">56 件缺口明细（自动汇总）</div></div></div>
+          <div class="row" style="padding:5px 6px;"><div style="width:14px;height:14px;background:#e9edf1;border-radius:3px;border:1px solid #cbd5e0;"></div><div class="g"><div class="t1">含未使用照片</div><div class="t2">18 张转入 _未使用/ 目录</div></div></div>
+
+          <div style="font-size:9px;color:#8b98a6;margin:7px 0 3px;">包内结构预览</div>
+          <pre class="plain" style="font-size:8px;padding:6px 7px;margin:0;line-height:1.55;">万象2026-0912/
+├─ 001_ABC-1024_牛皮纸箱/
+│   ├─ ABC-1024_01.jpg
+│   └─ ABC-1024_02.jpg
+├─ 002_DEF-2001_…/
+├─ _联系表.pdf
+├─ _清单对照表.xlsx
+└─ _未使用/</pre>
+
+          <div style="background:#c8452f;color:#fff;border-radius:6px;text-align:center;font-size:11px;padding:8px 0;font-weight:700;margin-top:9px;">生成交付包</div>
+        </div>
+        <div class="bb"><div>概览</div><div>采集</div><div>整理</div><div class="on">交付</div></div>
+      </div>
+    </div>
+    <div style="display:inline-block;vertical-align:top;max-width:calc(100% - 290px);margin:8px 0 8px 14px;font-size:13px;line-height:1.8;">
+      <ul style="margin:6px 0;">
+        <li><strong>顶部那块绿条是"可以交付"的判据</strong>。如果有未闭环项，这里会变成黄色警告并附上「去处理」按钮，<strong>但不强制拦截</strong>——现场可能就是要先发一版草稿</li>
+        <li>打包内容<strong>可勾可选</strong>：只发 PDF 联系表（小、微信直传）还是连原图一起发（大、走 WebDAV）</li>
+        <li><strong>目录结构预览</strong>让人在生成前就知道会得到什么，避免"生成完发现不对，重来一遍"</li>
+        <li>预计体积是<strong>估算值</strong>，让人提前决定走微信还是走网盘</li>
+        <li>生成后进入 P10：分享到微信 / 上传 WebDAV / 保存到本地</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="s5">
+<h2><span class="n">05</span> 核心流程设计</h2>
+
+<div class="flow">
+  <div class="step"><div class="sn">5.1</div><div class="st">项目建立</div><div class="sd">导入货品清单，建立匹配字典</div></div>
+  <div class="step"><div class="sn">5.2</div><div class="st">批量采集</div><div class="sd">现场走一圈拍完，零整理</div></div>
+  <div class="step"><div class="sn">5.3</div><div class="st">分组与建议</div><div class="sd">后台时序聚类 + OCR 建议生成</div></div>
+  <div class="step"><div class="sn">5.4</div><div class="st">统一对应 ★</div><div class="sd">人做决定，批量确认，处理缺口</div></div>
+  <div class="step"><div class="sn">5.5</div><div class="st">打包交付</div><div class="sd">ZIP + PDF + 对照表，分享</div></div>
+  <div class="step"><div class="sn">5.6</div><div class="st">检索与补拍</div><div class="sd">按编码查历史照片</div></div>
+</div>
+
+<h3>5.1 项目建立与清单导入</h3>
+<p>清单是<strong>指派候选的来源</strong>，也是交付包的目录骨架。导入必须允许失败重来——客户给的 Excel 形状千奇百怪。</p>
+<div class="flow">
+  <div class="step"><div class="sn">STEP 1</div><div class="st">选文件</div><div class="sd">微信文件 / 本地 / SAF。支持 .xlsx .xls .csv</div></div>
+  <div class="step"><div class="sn">STEP 2</div><div class="st">选工作表 + 表头行</div><div class="sd">多 sheet 时让用户选；自动检测表头所在行</div></div>
+  <div class="step"><div class="sn">STEP 3</div><div class="st">列映射</div><div class="sd">把表格的列对到系统字段（编码必填）</div></div>
+  <div class="step"><div class="sn">STEP 4</div><div class="st">校验</div><div class="sd">重复编码、空编码、非法字符，逐条列明</div></div>
+  <div class="step"><div class="sn">STEP 5</div><div class="st">确认导入</div><div class="sd">写入 item 表，建立 Trie 候选索引</div></div>
+</div>
+
+<div class="card">
+  <div class="ct">列映射向导的字段</div>
+  <table style="margin:6px 0 0;">
+    <thead><tr><th style="width:120px">系统字段</th><th style="width:80px">必填</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>货品编码</strong></td><td><span class="tag t-red">必填</span></td><td>OCM 匹配与交付目录命名的唯一键。缺失则无法建立对应关系</td></tr>
+      <tr><td>货品名称</td><td><span class="tag t-amber">建议</span></td><td>整理页卡片与 PDF 联系表用它做人类可读标题</td></tr>
+      <tr><td>规格 / 型号</td><td><span class="tag t-gray">可选</span></td><td>写进 PDF 联系表</td></tr>
+      <tr><td>数量</td><td><span class="tag t-gray">可选</span></td><td>写进对照表，便于报告员核对</td></tr>
+      <tr><td>单位</td><td><span class="tag t-gray">可选</span></td><td>同上</td></tr>
+      <tr><td>要求张数</td><td><span class="tag t-gray">可选</span></td><td>不填则用全局默认（每品 2 张），用于整理页的缺张提醒</td></tr>
+      <tr><td>备注</td><td><span class="tag t-gray">可选</span></td><td>原样带入交付包</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card warn">
+  <div class="ct">导入校验规则（硬性）</div>
+  <ul style="margin:6px 0 0;">
+    <li><strong>编码为空</strong> → 跳过该行，计入"未导入 N 行"并展示行号（客户清单常有一个"合计"行）</li>
+    <li><strong>编码重复</strong> → 默认保留首次出现，提示"第 37 行与第 12 行编码相同"。允许用户选"合并"或"重命名保留"</li>
+    <li><strong>编码含不可用于文件名的字符</strong>（<code>/ \ : * ? " &lt; &gt; |</code>）→ 自动替换为 <code>_</code>，并在交付命名时使用替换后的版本（<strong>数据库里保留原值</strong>，两者都要留）</li>
+    <li><strong>编码含全角字符 / 前后空格</strong> → 归一化（trim + 全角转半角），并给出提示</li>
+    <li><strong>超过 5000 行</strong> → 提示"清单异常大，是否确认？"（防误导入错文件）</li>
+  </ul>
+</div>
+
+<h3>5.2 采集流程（现场 · 零整理）</h3>
+<pre class="plain">【进入】项目工作台 → 采集 Tab（或工作台主按钮「开始采集」）
+    ↓  自动进入全屏相机，无需任何点击
+【拍摄】按快门 → 原图直存 → 缩略图异步入队 → 张数 +1
+        · 长按快门 = 连拍（每 400ms 一张，最多 20 张）
+        · 上滑快门 = 切换前后摄
+        · 点击取景框任意处 = 对焦/测光
+        · 点击「结束采集」需长按 1 秒（防误触）
+【批次】每一段"开始→结束"记为一次 capture_session
+        · 息屏 / 来电 / 切后台 → 自动暂停，回来自动续接同一 session
+        · 单 session 无张数上限；单项目<strong>按 1600 张设计</strong>（真实规模上限，见 §9.1）
+【相册】采集页左上角「+ 相册」→ 多选导入
+        · 相册照片进入同一个"待整理池"
+        · 标记 source=album，不参与时序分组（见 5.3）
+【落盘】写入 photo 表，status = unassigned，item_id = NULL
+        ★ 全程不调用 OCR、不写入任何归属、不联网</pre>
+
+<div class="card warn">
+  <div class="ct">采集期的三条禁令（代码层面强制）</div>
+  <ol style="margin:6px 0 0;">
+    <li><strong>禁 OCR</strong> —— 不调用 <code>SuggestService</code>（lint 规则拦截 import）</li>
+    <li><strong>禁网络</strong> —— 采集页不发起任何 HTTP 请求，包括上传</li>
+    <li><strong>禁弹窗</strong> —— 除"存储空间不足"外，采集页不出现任何对话框 / SnackBar</li>
+  </ol>
+</div>
+
+<h3>5.3 分组与建议生成（后台 · 采集结束后）</h3>
+<p>这两个步骤都在<strong>采集结束之后、整理开始之前</strong>执行。它们是"整理页好不好用"的地基。</p>
+
+<h4>5.3.1 时序聚类（GroupingService）</h4>
+<pre class="plain">输入：同一 capture_session 内、按 taken_at 升序的 photo 列表
+规则：
+  1. 相邻两张的时间间隔 ≤ 45 秒  → 归入同一组
+  2. 单组张数上限 12 张（超出的开新组，防止"连续拍 40 张"糊成一组）
+  3. 组张数下限 1 张（允许单张成组）
+  4. 跨 capture_session 不合并
+  5. source=album 的照片：若该 session 内 taken_at 全部相同或跨度 < 2 秒
+     → 每张独立成组（时间戳不可信，不做聚类）
+     否则沿用规则 1~3，但组标记 origin=album
+输出：photo_group 记录（seq 按组内首张时间排序）
+可修正：整理页提供 合并 / 拆分 / 移出 三个操作，改完即时重算</pre>
+
+<h4>5.3.2 OCR 建议合成（SuggestService）</h4>
+<pre class="plain">对每一组、组内每一张：
+  1. 缩到长边 1600px 后送入 ML Kit（降分辨率以提速，仍足够识别印刷体）
+  2. 得到 tokens：{ text, confidence, box(归一化), page }
+  3. token 归一化
+       · 全角→半角、去空白、去常见分隔符差异（连字符/下划线/点）
+       · 仅在「数字段」内做形近纠偏：O→0  I/l→1  S→5  B→8  Z→2  G→6
+  4. 与清单编码字典匹配，取最佳命中：
+       完全相等            → base 0.98
+       清单编码是 token 前缀 → base 0.86
+       编辑距离 = 1        → base 0.88
+       编辑距离 = 2        → base 0.72
+       编辑距离 ≥ 3        → 丢弃
+  5. 单张得分 = base × token_ocr_confidence × 位置权重(中心/大字号 1.0，边缘 0.85)
+  6. 组级建议 = 组内按得分加权投票
+       · 胜者 = 加权票最高者
+       · 若第二名与胜者差值 < 0.15 → 组标记 conflict（提示人看一眼）
+       · 若组内最高分 < 0.40 → 组标记 no_suggestion
+输出：photo_group.suggested_item_id / suggestion_confidence / suggestion_evidence</pre>
+
+<div class="card ok">
+  <div class="ct">关键：阈值不再决定"归不归"，只决定"标不标冲突"</div>
+  这是 v3.0 与 v2.0 最本质的区别。v2.0 里 0.90 是"自动归档线"——跨过它就机器说了算。<br>
+  v3.0 里，<strong>没有任何阈值能让机器直接写入归属</strong>。置信度只做两件事：<strong>① 排序（把最可能对的排在前面）② 标冲突（提醒人这里要留意）</strong>。<br><br>
+  好处：<strong>OCR 精度的波动不再影响交付正确性</strong>。哪怕它今天整体偏保守（只敢给 0.5），人也不过是多看几眼；哪怕它今天整体偏激进（什么都给 0.95），人也还是每一条都看过。<strong>系统对 OCR 精度的依赖被彻底切断了。</strong>
+</div>
+
+<h4>5.3.3 预处理的可中断性</h4>
+<table>
+  <thead><tr><th style="width:170px">场景</th><th>行为</th></tr></thead>
+  <tbody>
+    <tr><td>用户直接进整理页</td><td>若预处理未完成，页面顶部显示进度条「正在准备：识别 128/640」，<strong>已完成的组立即可操作</strong>，不做全屏阻塞</td></tr>
+    <tr><td>OCR 开关被关闭</td><td>跳过 5.3.2，只做分组。整理页不显示任何建议，全部走手动指派。<strong>功能不缺失，只是变慢</strong></td></tr>
+    <tr><td>ML Kit 初始化失败 / 机型不支持</td><td>自动降级为"无建议模式"，顶部提示一次，不反复报错</td></tr>
+    <tr><td>用户在预处理中退出 APP</td><td>任务持久化，下次进入继续；已完成的部分不重跑</td></tr>
+  </tbody>
+</table>
+
+<h3>5.4 对应货品流程 ★ <span class="tag t-red">本方案核心</span></h3>
+<p>这是全案最重要的界面与流程。按真实规模（几百件 / 1200 张 / 持续一天），目标定为：<strong>覆盖率达标（≥80%）＋ 无未对应照片，全程 ≤ 30 分钟，可分多次完成。</strong></p>
+
+<div class="card new">
+  <div class="ct">v3.1 关键设计：两条路径，同一套数据（老板确认"两种都可能"）</div>
+  <strong>路径 A · 现场随手清</strong>（拍一段就清一段）
+  <ul style="margin:6px 0 8px;">
+    <li>采集页有个<strong>不显眼</strong>的入口：「已拍 <strong>37</strong> 张 · 点此对应」。只在照片累积到一定数量（默认 20 张）后才出现，避免采集期被反复打扰。</li>
+    <li>点进去只看<strong>这一批</strong>（最近这段连拍），几十张级别，几分钟清完。清完自动回到采集页。</li>
+    <li>好处：记忆新鲜、认得出是哪件货；不用等到收工回顾上千张。</li>
+    <li>代价：打断拍摄节奏。<strong>所以入口必须克制</strong>——绝不弹窗、绝不变红、绝不显示"待办 N 项"。</li>
+  </ul>
+  <strong>路径 B · 收工统一过</strong>
+  <ul style="margin:6px 0 0;">
+    <li>白天只拍，收工后进整理工作台，按批次（Burst）从头到尾过一次。</li>
+    <li>整理页支持<strong>断点续做</strong>：做到一半退出、第二天再来，进度一点不丢（每确认一组即时落盘）。</li>
+  </ul>
+  <br>
+  <strong>为什么两条路径不能各做一套界面：</strong>现场清的是一小段，收工过的是全部，但"看组 → 确认 → 落盘"的动作完全一样。共用同一套整理组件，只是<strong>数据范围</strong>（本批 / 全部）不同。这样 M3 只需实现一次。
+</div>
+
+<div class="flow">
+  <div class="step"><div class="sn">S1</div><div class="st">一键确认高置信</div><div class="sd">清掉 60~80% 的量</div></div>
+  <div class="step"><div class="sn">S2</div><div class="st">逐块确认</div><div class="sd">相似建议合并成块，一次点掉</div></div>
+  <div class="step"><div class="sn">S3</div><div class="st">处理冲突组</div><div class="sd">组内识别不一致，展开逐张看</div></div>
+  <div class="step"><div class="sn">S4</div><div class="st">处理无建议组</div><div class="sd">指派面板 / 扫码 / 新建货品</div></div>
+  <div class="step"><div class="sn">S5</div><div class="st">看覆盖率是否达标</div><div class="sd">≥80% 就能交付；不够可补拍</div></div>
+  <div class="step"><div class="sn">S6</div><div class="st">收尾交付</div><div class="sd">未使用照片归档，缺口自动汇总</div></div>
+</div>
+
+<div class="card warn">
+  <div class="ct">v3.1 的核心改动：S5 从「清缺口」变成「看覆盖率」</div>
+  v3.0 的 S5 是<strong>清清单缺口</strong>——列出所有没照片的货品，逐件标记「现场未见 / 补拍」。按真实规模，这意味着几百件里有 40~100 件要处理，<strong>光标记原因就要 15~30 分钟，而且必然做不完整</strong>。
+  <br><br>
+  v3.1 改成<strong>覆盖率闸门</strong>：
+  <table style="margin:8px 0 0;">
+    <thead><tr><th style="width:150px">覆盖率</th><th style="width:110px">判定</th><th>界面行为</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>≥ 80%</strong></td>
+        <td><span class="tag t-green">达标</span></td>
+        <td>交付 Tab 亮起，<strong>缺口清单自动汇总进交付包</strong>，不需要任何人工标记。顶部只提示一句「清单 387 件 · 已拍 322 件 · 缺口 65 件（已写入对照表）」</td>
+      </tr>
+      <tr>
+        <td><strong>60% ~ 80%</strong></td>
+        <td><span class="tag t-amber">提示</span></td>
+        <td>黄条提示「覆盖率 72%，低于常见达标线 80%」。给出两条路：<strong>[回去补拍]</strong>（跳采集页）或 <strong>[仍然导出]</strong>（需手写一句原因，如"部分货已被提走"）</td>
+      </tr>
+      <tr>
+        <td><strong>&lt; 60%</strong></td>
+        <td><span class="tag t-red">拦一下</span></td>
+        <td>红条提示，导出前必须<strong>显式勾选"我知道覆盖率不足"</strong>并填原因。这是防止"拍漏了一半还以为完事了"</td>
+      </tr>
+    </tbody>
+  </table>
+  <br>
+  ⚠️ 注意：<strong>门槛只管"覆盖率"，不管"缺口具体是哪几件"</strong>。缺口清单会照实写进交付包的 <code>_清单缺口.txt</code>，让报告员自己判断——APP 不替业务下"哪些缺口可以接受"的判断。
+</div>
+
+<h4>S1 · 一键确认高置信</h4>
+<p>顶部按钮，点击后弹出一个<strong>可复核的列表</strong>（不是直接执行）：</p>
+<div class="card new">
+  <div class="ct">「一键确认高置信」的执行条件</div>
+  进入这个批次的组必须<strong>同时</strong>满足：
+  <ul style="margin:6px 0 0;">
+    <li>组级置信度 ≥ 0.90</li>
+    <li>组内所有照片的建议<strong>一致</strong>（没有 conflict）</li>
+    <li>该货品当前<strong>还没有被其他组占用</strong>（一个货品只允许一个主组，冲突的会被排除）</li>
+  </ul>
+  <br>
+  弹层展示：「以下 <strong>74 组 · 213 张</strong>将被确认」+ 可横向滚动查看缩略图 + [全部确认] / [取消]。<br>
+  <strong>这是整条链路里唯一的一次"批量信任"</strong>——但因为人看得到即将发生什么，它仍然是一个人类决策，只是批量的。
+</div>
+
+<h4>S2 · 逐块确认（相似建议合并）</h4>
+<p>剩余待确认的组，按<strong>建议货品</strong>聚合展示。3 个组都建议 GHI-3300 → 合成一张卡，标题「3 组 · 7 张 · 全部建议 GHI-3300」，一次点击确认全部。</p>
+<p>为什么要把它们合并？因为预检员在现场对同一件货可能拍了两段（中间插了别的货），或者在两个位置拍了同一型号的不同箱。这些情况在清单一侧是同一个编码，<strong>合并展示能让人一次决策，而不是三次机械点击</strong>。</p>
+
+<h4>S3 · 处理冲突组</h4>
+<pre class="plain">冲突组的卡片样式：
+  [橙色左边框]  ⚠ 组内识别不一致 · 3 张
+     ├ 第 1 张 → 建议 ABC-1024 (0.94)
+     ├ 第 2 张 → 建议 ABC-1024 (0.91)
+     └ 第 3 张 → 建议 XYZ-7788 (0.83)   ← 与组建议不同，高亮
+  操作：[按多数确认 ABC-1024]  [逐张指派]  [拆分组]
+
+设计意图：第 3 张很可能是"拍到了旁边那箱货"，或者是标签被遮挡后误识。
+         不自动处理，而是把证据摊开让人 5 秒判断。</pre>
+
+<h4>S4 · 处理无建议组</h4>
+<p>没有识别结果、或置信度过低的组。场景包括：标签反光/模糊/遮挡、手写标签、清单外的货、拍了空托盘或环境照。</p>
+<table>
+  <thead><tr><th style="width:180px">人的动作</th><th>结果</th></tr></thead>
+  <tbody>
+    <tr><td><strong>手动指派</strong></td><td>打开指派面板：候选列表（输入 2~3 字符即出）+ 搜索 + 扫码</td></tr>
+    <tr><td><strong>创建为新货品</strong></td><td>清单外货品。只需填编码（可从照片 OCR 的原始文本里选一段预填）+ 名称，立即建立 item 并完成指派。<strong>这个新货品会出现在对照表里，标注"清单外"</strong></td></tr>
+    <tr><td><strong>标记为未使用</strong></td><td>环境照 / 废片。归入交付包的 <code>_未使用/</code> 目录，不删</td></tr>
+    <tr><td><strong>与相邻组合并</strong></td><td>拍照时走神，把一件货拍成了两段 → 选中相邻组，合并后重新指派</td></tr>
+  </tbody>
+</table>
+
+<h4>S5 · 看覆盖率是否达标 <span class="tag t-blue">这是 v2.0 完全没有的能力</span></h4>
+<div class="card ok">
+  <div class="ct">覆盖率仪表 + 缺口视图：从"清单"这一侧倒着看</div>
+  前面的步骤都是"照片 → 找货品"。覆盖率视图反过来：<strong>看清单里的货，到底拍到了几成。</strong>
+  <pre class="plain" style="margin:8px 0 0;">清单 387 件 → 已对应 322 件 → 缺口 65 件 → 覆盖率 83.2%  [达标]
+  └─ 点击展开缺口明细（只列事实，不逐件标原因）
+       DEF-2001 钢制法兰   ·  [补拍] → 跳采集页，拍完自动回来
+       GHI-3300 塑料件     ·  [指派已有照片] → 从"未使用/无建议"照片里挑
+       ...
+  低于达标线时：
+       [回去补拍]  或  [仍然导出]（需一句原因，如"部分货已被提走"）</pre>
+  <br>
+  <strong>为什么这个视图重要：</strong>它是唯一能回答「<strong>我是不是漏拍了哪件货</strong>」的地方。v2.0 完全依赖 OCR 成功识别才能知道某件货被拍了；只要 OCR 失败，系统就永远不知道那件货其实拍过、或者根本没拍。<strong>覆盖率视图把这个判断从"识别问题"变回了"清单比对问题"——100% 可靠。</strong>
+  <br><br>
+  ⚠️ 与 v3.0 的区别：缺口<strong>不再是"必须逐件清理的待办"</strong>，而是一份<strong>如实交给报告员的信息</strong>——自动汇总进交付包的 <code>_清单缺口.txt</code>。原因由报告员与预检员线下确认，比在 APP 里挨个点选更准确。
+</div>
+
+<h4>S6 · 收尾</h4>
+<p>当顶部显示「覆盖率 <strong>≥ 达标线</strong> · 待处理 0」时，底部 Tab 的红色角标消失，交付 Tab 亮起引导。此时还剩一件事：池子里的"未使用"照片——它们不阻塞交付，会在打包时统一进 <code>_未使用/</code>。</p>
+
+<div class="card tip">
+  <div class="ct">整理流程的两条产品原则</div>
+  <ol style="margin:6px 0 0;">
+    <li><strong>随时可中断。</strong>每确认一组即时落盘。预检员可以整理到一半去接电话、退出 APP、第二天再来——进度一点不丢。<strong>这也是"现场随手清 + 收工统一过"两条路径能共用一套数据的前提。</strong></li>
+    <li><strong>无强制顺序。</strong>虽然默认引导 S1→S6，但任何一步都可以跳过。APP 不会"不让你走下一步"，只会在交付页汇总提示还剩什么。</li>
+  </ol>
+</div>
+
+<h3>5.5 打包交付流程</h3>
+<pre class="plain">【前置校验】—— 分三级，只有第 1 级是硬闸门
+   L1 硬闸门（不过不能导出）
+      · 交付包正片数 = 有 assignment 记录的照片数               ✔ 结构保证，恒成立
+      · 不存在"有归属但无决策记录"的照片                       ✔ 结构保证，恒成立
+      · 不存在"有归属但无确认人/确认时间"                      ✔ 结构保证，恒成立
+   L2 覆盖率闸门（v3.1 新增，按 §5.4 三级规则）
+      · 覆盖率 ≥ 80%  → 放行，缺口自动写入对照表
+      · 60%~80%       → 黄条提示，可「回去补拍」或「仍要导出」（需填原因）
+      · < 60%         → 红条，导出前须显式勾选"我知道覆盖率不足"+ 填原因
+   L3 提示（不阻塞）
+      · 未对应照片 → 提示数量，可「去处理」或「忽略并继续」
+      · 存储空间 < 预计包体积 × 1.5 → 提示清理
+
+【命名规范】交付包内（不改动原始文件）
+   目录：{3位序号}_{编码}_{品名简称≤12字}/
+   文件：{编码}_{2位序号}.jpg
+   示例：001_ABC-1024_牛皮纸箱/ABC-1024_01.jpg
+
+【包结构】
+   万象2026-0912/
+   ├─ 001_ABC-1024_牛皮纸箱/          ← 每货品一目录
+   │   ├─ ABC-1024_01.jpg
+   │   └─ ABC-1024_02.jpg
+   ├─ 002_DEF-2001_钢制法兰/
+   ├─ ...
+   ├─ _联系表.pdf                      ← 按货品分节的图文联系表
+   ├─ _清单对照表.xlsx                 ← 含"缺口"与"清单外"标注
+   ├─ _清单缺口.txt                    ← v3.1 新增：缺口货品清单（自动汇总）
+   ├─ _manifest.json                  ← 机器可读的完整元数据
+   └─ _未使用/                        ← 未指派/废片（可选打包）</pre>
+
+<div class="card new">
+  <div class="ct">v3.1 新增：<code>_清单缺口.txt</code> —— 把"没拍到"这件事说清楚</div>
+  按覆盖率达标制，缺口不再是"必须消灭的待办"，而是<strong>一份要如实交给报告员的信息</strong>。APP 自动生成，不需要任何人工标记：
+  <pre class="plain" style="margin:8px 0 0;">清单缺口清单 · 万象2026-0912
+生成时间：2026-09-23 18:42
+清单货品 387 件 · 已有照片 322 件 · 缺口 65 件 · 覆盖率 83.2%
+
+【缺口明细】（按清单序号）
+序号   货品编码      货品名称        规格         清单数量
+007    DEF-2001      钢制法兰        DN100        50 件
+018    GHI-3300      塑料件          330×220      120 件
+...（共 65 行）
+
+【说明】
+  · 以上货品在本次预检中未采集到照片。
+  · 本清单由 APP 按清单与实际照片自动比对生成，未作人工原因标注。
+  · 如需原因说明，请参考预检人员备注（如有）：{备注}</pre>
+  <br>
+  <strong>为什么不做"逐件标原因"：</strong>几百件里挑出 65 件挨个选原因，是一项没人愿意认真做的劳动——做完的也是敷衍。<strong>把"为什么没拍到"交给打电话问，比让现场的人挨个点选更准确。</strong>APP 只负责把事实（哪几件缺）精确地列出来。
+</div>
+
+<pre class="plain">【生成】分批写 ZIP（每 20 张 flush 一次），进度条可取消
+【分享】① 分享 ZIP → 系统分享面板 → 微信
+        ② 分享 PDF 联系表（体积小，微信直传首选）
+        ③ 上传 WebDAV（后台上传队列，可关闭 APP 继续传）
+        ④ 导出到本地 / SAF 指定目录</pre>
+
+<h4>PDF 联系表结构</h4>
+<table>
+  <thead><tr><th style="width:150px">页</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td><strong>封面页</strong></td><td>项目名 · 客户 · 预检日期 · <strong>清单件数 / 已拍照数 / 覆盖率</strong> · 照片总数 · 生成时间 · 异常摘要（缺口件数）</td></tr>
+    <tr><td><strong>货品页 ×N</strong></td><td>标题栏：<code>001 · ABC-1024 · 牛皮纸箱 200×150</code>；下方照片网格（每行 2~3 张，保持原始宽高比）；每张下附文件名与拍摄时间；页脚标注该货品张数与"是否达标"</td></tr>
+    <tr><td><strong>缺口清单页</strong></td><td>「以下 N 件货品未采集到照片」+ 清单明细表。<strong>这一页对报告员特别重要</strong>——它是报告里"未装 / 缺货"结论的依据</td></tr>
+    <tr><td><strong>清单外货品页</strong></td><td>现场有、清单无的货品</td></tr>
+  </tbody>
+</table>
+<p style="font-size:12.5px;color:var(--text-dim);margin-top:6px;">
+  ⚠️ <strong>缺口清单页只列事实，不列原因</strong>——按覆盖率达标制，缺口不要求人工逐件标注原因。原因由报告员与预检员线下确认，比在 APP 里挨个点选更准确。
+</p>
+
+<h4>清单对照表（xlsx）字段</h4>
+<pre class="plain">序号 | 货品编码 | 货品名称 | 规格 | 清单数量 | 单位 | 照片张数 | 要求张数 | 状态 | 备注
+-----+----------+----------+------+----------+------+----------+----------+-------+-----
+001  | ABC-1024 | 牛皮纸箱 | ...  | 100      | 箱   | 3        | 2        | 正常  |
+002  | DEF-2001 | 钢制法兰 | ...  | 50       | 件   | 0        | 2        | 缺口  |     ← v3.1：不再标"现场未见"，因为 APP 无法知道原因
+999  | (清单外) XYZ-7788 | ... | ...  | —        | —    | 4        | —        | 清单外 |</pre>
+
+<div class="card tip">
+  <div class="ct">v3.1 措辞的一处刻意改动：「现场未见」→「缺口」</div>
+  v3.0 在对照表里写「<strong>现场未见</strong>」，这个措辞<strong>替业务下了一个判断</strong>——"人在现场没找到这件货"。但没拍到照片的真实原因很多：货还没到、已经被提走、压在垛底懒得翻、纯粹忘了拍。<strong>这些原因的性质完全不同，对报告结论的影响也完全不同。</strong>
+  <br><br>
+  APP 只掌握一个事实：<strong>这件货没有照片</strong>。所以 v3.1 统一写「<strong>缺口</strong>」，把原因留给线下确认。这不是措辞洁癖，而是<strong>不让工具的措辞替人下结论</strong>——报告里"未装/缺货"的判断必须有人负责。
+</div>
+
+<h4>WebDAV 同步</h4>
+<table>
+  <thead><tr><th style="width:170px">项</th><th>设计</th></tr></thead>
+  <tbody>
+    <tr><td>远程路径</td><td><code>{配置的根路径}/预检项目/{项目名}_{yyyyMMdd}/</code>，先 MKCOL 建目录再上传</td></tr>
+    <tr><td>上传粒度</td><td>以交付包为单位；大包按 50MB 分片上传 <code>.part</code> 后改名（兼容不支持 chunk 的服务器）</td></tr>
+    <tr><td>并发与退避</td><td>并发 3 路；失败退避 1 / 5 / 15 / 60 min，最多 5 次；仍失败则标记人工处理</td></tr>
+    <tr><td>断点</td><td>记录已上传字节数，恢复时用 <code>Range</code> 续传；服务器不支持则重传整片</td></tr>
+    <tr><td>凭据</td><td>存 <code>flutter_secure_storage</code>；设置页提供「测试连接」按钮</td></tr>
+    <tr><td>失败不阻塞</td><td>上传是交付的<strong>旁路</strong>，不是必经步骤。微信分享永远可用</td></tr>
+  </tbody>
+</table>
+
+<h3>5.6 检索与补拍</h3>
+<pre class="plain">入口 A：全局检索页 —— 输入编码片段 → 模糊匹配（Trie 前缀 + 编辑距离）
+入口 B：扫码 —— 扫货品条码/二维码 → 直达货品详情
+入口 C：整理页指派面板 —— 同一个检索能力，用于快速指派
+
+结果展示：按项目分组，每组显示 编码 · 品名 · 照片数 · 最近拍摄时间
+点击进入：货品详情页 —— 全部照片（大图可缩放）+ 所在交付包 + [补拍] 按钮
+补拍路径：货品详情 → 补拍 → 采集页（临时 session，自动回跳）→ 该货品照片 +N</pre>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="s6">
+<h2><span class="n">06</span> 数据模型设计</h2>
+
+<h3>6.1 实体关系</h3>
+<pre class="plain">project 1 ── n item                    （货品清单）
+project 1 ── n capture_session          （一次采集 = 一段"开拍→结束"）
+session 1 ── n photo
+session 1 ── n photo_group              （时序聚类结果）
+group   1 ── n photo
+photo   1 ── n ocr_token                （OCR 原始结果）
+photo   n ── 1 item                     （经 Assignment 确认后的归属）
+assignment ── 指向 photo 或 photo_group，记录"谁/何时/依据什么"做了决定
+project 1 ── n delivery                 （交付包）
+delivery 1 ── n upload_task             （WebDAV 上传队列）</pre>
+
+<div class="card viol">
+  <div class="ct">本版数据模型最核心的一条设计</div>
+  <code>photo.item_id</code> <strong>只能由 <code>AssignService</code> 写入</strong>，而 <code>AssignService</code> 的每一个写入口都要求传入 <code>confirmed_by</code> 与 <code>confirmed_at</code>。<br>
+  OCR 结果<strong>根本不落在 photo 表上</strong>——它落在 <code>photo_group.suggested_item_id</code> 与 <code>ocr_token</code> 里。这在物理层面保证了<strong>机器无法产生一条"看起来像已确认"的归属</strong>。
+</div>
+
+<h3>6.2 表结构（drift / SQLite）</h3>
+<pre><span class="c">// ── 项目 ─────────────────────────────────────────────</span>
+<span class="k">class</span> <span class="t">Projects</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> name          =&gt; text()();
+  TextColumn   <span class="k">get</span> client        =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> createdAt     =&gt; integer()();
+  TextColumn   <span class="k">get</span> status        =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'collecting'</span>))();   <span class="c">// collecting/organizing/delivering/done</span>
+  TextColumn   <span class="k">get</span> checklistFile =&gt; text().nullable()();
+  TextColumn   <span class="k">get</span> settingsJson  =&gt; text().nullable()();
+}
+
+<span class="c">// ── 货品（来自清单） ─────────────────────────────────</span>
+<span class="k">class</span> <span class="t">Items</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> projectId     =&gt; text().references(Projects, <span class="c">#id</span>)();
+  IntColumn    <span class="k">get</span> seq           =&gt; integer()();                    <span class="c">// 清单行序，决定交付目录序号</span>
+  TextColumn   <span class="k">get</span> code          =&gt; text()();                      <span class="c">// 原始编码（保留原样）</span>
+  TextColumn   <span class="k">get</span> codeSafe      =&gt; text()();                      <span class="c">// 文件名安全版本</span>
+  TextColumn   <span class="k">get</span> name          =&gt; text().nullable()();
+  TextColumn   <span class="k">get</span> spec          =&gt; text().nullable()();
+  RealColumn   <span class="k">get</span> qty           =&gt; real().nullable()();
+  TextColumn   <span class="k">get</span> unit          =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> requiredPhotos=&gt; integer().withDefault(<span class="s">const</span> Constant(2))();
+  TextColumn   <span class="k">get</span> state         =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'normal'</span>))(); <span class="c">// normal/not_found/extra</span>
+  TextColumn   <span class="k">get</span> notFoundReason=&gt; text().nullable()();
+  TextColumn   <span class="k">get</span> remark        =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> deletedAt     =&gt; integer().nullable()();
+  <span class="k">@override</span> List&lt;Set&lt;Column&gt;&gt; <span class="k">get</span> uniqueKeys =&gt; [[projectId, code]];
+}
+
+<span class="c">// ── 采集批次 ─────────────────────────────────────────</span>
+<span class="k">class</span> <span class="t">CaptureSessions</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> projectId     =&gt; text().references(Projects, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> source        =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'camera'</span>))(); <span class="c">// camera/album</span>
+  IntColumn    <span class="k">get</span> startedAt     =&gt; integer()();
+  IntColumn    <span class="k">get</span> endedAt       =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> photoCount    =&gt; integer().withDefault(<span class="s">const</span> Constant(0))();
+  TextColumn   <span class="k">get</span> note          =&gt; text().nullable()();
+}
+
+<span class="c">// ── 拍摄组（时序聚类结果，可人工修正） ────────────────</span>
+<span class="k">class</span> <span class="t">PhotoGroups</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> projectId     =&gt; text().references(Projects, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> sessionId     =&gt; text().references(CaptureSessions, <span class="c">#id</span>)();
+  IntColumn    <span class="k">get</span> seq           =&gt; integer()();
+  TextColumn   <span class="k">get</span> coverPhotoId  =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> photoCount    =&gt; integer().withDefault(<span class="s">const</span> Constant(0))();
+  TextColumn   <span class="k">get</span> origin        =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'camera'</span>))(); <span class="c">// camera/album/manual</span>
+  <span class="c">// —— OCR 建议（机器产出，不等于归属）——</span>
+  TextColumn   <span class="k">get</span> suggestedItemId =&gt; text().nullable()();
+  RealColumn   <span class="k">get</span> suggestionConf  =&gt; real().nullable()();
+  TextColumn   <span class="k">get</span> suggestionJson   =&gt; text().nullable()();         <span class="c">// 候选列表 + 命中证据</span>
+  TextColumn   <span class="k">get</span> suggestState     =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'pending'</span>))(); <span class="c">// pending/no_suggestion/conflict/none</span>
+  <span class="c">// —— 人的决定 ——</span>
+  TextColumn   <span class="k">get</span> itemId        =&gt; text().nullable()();                 <span class="c">// ★ 只由 AssignService 写</span>
+  IntColumn    <span class="k">get</span> confirmedAt   =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> createdAt     =&gt; integer()();
+}
+
+<span class="c">// ── 照片 ─────────────────────────────────────────────</span>
+<span class="k">class</span> <span class="t">Photos</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> projectId     =&gt; text().references(Projects, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> sessionId     =&gt; text().references(CaptureSessions, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> groupId       =&gt; text().nullable()();
+  TextColumn   <span class="k">get</span> filePath      =&gt; text()();                      <span class="c">// 原始文件，永不改名</span>
+  TextColumn   <span class="k">get</span> thumbPath     =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> width         =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> height        =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> bytes         =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> takenAt       =&gt; integer()();                    <span class="c">// EXIF 优先，退化到写入时间</span>
+  IntColumn    <span class="k">get</span> seq           =&gt; integer()();                    <span class="c">// 项目内全局序号</span>
+  TextColumn   <span class="k">get</span> itemId        =&gt; text().nullable()();              <span class="c">// ★ 只由 AssignService 写</span>
+  TextColumn   <span class="k">get</span> state         =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'unassigned'</span>))(); <span class="c">// unassigned/confirmed/unused</span>
+  TextColumn   <span class="k">get</span> ocrState      =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'pending'</span>))();  <span class="c">// pending/running/done/failed/skipped</span>
+  TextColumn   <span class="k">get</span> sharpnessFlag =&gt; text().nullable()();              <span class="c">// blur/exposure/reasonable</span>
+  IntColumn    <span class="k">get</span> createdAt     =&gt; integer()();
+}
+
+<span class="c">// ── OCR 原始 token（机器产出，与归属完全隔离） ────────</span>
+<span class="k">class</span> <span class="t">OcrTokens</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> photoId       =&gt; text().references(Photos, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> text          =&gt; text()();
+  RealColumn   <span class="k">get</span> confidence    =&gt; real()();
+  TextColumn   <span class="k">get</span> boxJson       =&gt; text()();   <span class="c">// 归一化坐标，用于位置权重</span>
+  IntColumn    <span class="k">get</span> page          =&gt; integer().withDefault(<span class="s">const</span> Constant(0))();
+}
+
+<span class="c">// ── 归属决策记录（可追溯的核心） ──────────────────────</span>
+<span class="k">class</span> <span class="t">Assignments</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> projectId     =&gt; text().references(Projects, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> targetType    =&gt; text()();   <span class="c">// photo / group</span>
+  TextColumn   <span class="k">get</span> targetId      =&gt; text()();
+  TextColumn   <span class="k">get</span> itemId        =&gt; text()();
+  TextColumn   <span class="k">get</span> source        =&gt; text()();   <span class="c">// manual/suggestion_confirmed/bulk_confirm/split_merge/carry</span>
+  TextColumn   <span class="k">get</span> suggestedItemId =&gt; text().nullable()(); <span class="c">// 当时机器的建议是什么（用于复盘采纳率）</span>
+  RealColumn   <span class="k">get</span> suggestionConf  =&gt; real().nullable()();
+  IntColumn    <span class="k">get</span> confirmedAt   =&gt; integer()();        <span class="c">// ★ 非空</span>
+  TextColumn   <span class="k">get</span> confirmedBy   =&gt; text()();           <span class="c">// 设备昵称（免登录下的最小身份）</span>
+  IntColumn    <span class="k">get</span> revokedAt     =&gt; integer().nullable()();
+  TextColumn   <span class="k">get</span> note          =&gt; text().nullable()();
+}
+
+<span class="c">// ── 交付包 ───────────────────────────────────────────</span>
+<span class="k">class</span> <span class="t">Deliveries</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> projectId     =&gt; text().references(Projects, <span class="c">#id</span>)();
+  IntColumn    <span class="k">get</span> createdAt     =&gt; integer()();
+  TextColumn   <span class="k">get</span> optionsJson   =&gt; text()();   <span class="c">// includeRaw/includePdf/includeManifest/includeUnused</span>
+  TextColumn   <span class="k">get</span> zipPath       =&gt; text().nullable()();
+  TextColumn   <span class="k">get</span> pdfPath       =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> bytes         =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> itemCount     =&gt; integer().nullable()();
+  IntColumn    <span class="k">get</span> photoCount    =&gt; integer().nullable()();
+  TextColumn   <span class="k">get</span> sha256        =&gt; text().nullable()();
+  IntColumn    <span class="k">get</span> sharedAt      =&gt; integer().nullable()();
+  TextColumn   <span class="k">get</span> webdavPath    =&gt; text().nullable()();
+}
+
+<span class="c">// ── WebDAV 上传队列 ──────────────────────────────────</span>
+<span class="k">class</span> <span class="t">UploadTasks</span> <span class="k">extends</span> Table {
+  TextColumn   <span class="k">get</span> id            =&gt; text()();
+  TextColumn   <span class="k">get</span> deliveryId    =&gt; text().references(Deliveries, <span class="c">#id</span>)();
+  TextColumn   <span class="k">get</span> localPath     =&gt; text()();
+  TextColumn   <span class="k">get</span> remotePath    =&gt; text()();
+  IntColumn    <span class="k">get</span> bytes         =&gt; integer()();
+  IntColumn    <span class="k">get</span> uploadedBytes =&gt; integer().withDefault(<span class="s">const</span> Constant(0))();
+  TextColumn   <span class="k">get</span> state         =&gt; text().withDefault(<span class="s">const</span> Constant(<span class="s">'queued'</span>))();
+  IntColumn    <span class="k">get</span> attempts      =&gt; integer().withDefault(<span class="s">const</span> Constant(0))();
+  IntColumn    <span class="k">get</span> nextRetryAt   =&gt; integer().nullable()();
+  TextColumn   <span class="k">get</span> lastError     =&gt; text().nullable()();
+}</pre>
+
+<h3>6.3 索引与关键查询</h3>
+<pre><span class="c">-- 整理页主查询：按组列出待处理的组</span>
+<span class="k">CREATE INDEX</span> idx_group_project_state <span class="k">ON</span> photo_groups(project_id, suggest_state, seq);
+<span class="c">-- 已确认的组按货品聚合（相似建议合并、缺口计算）</span>
+<span class="k">CREATE INDEX</span> idx_group_item        <span class="k">ON</span> photo_groups(project_id, item_id);
+<span class="c">-- 照片按组取、按时间取</span>
+<span class="k">CREATE INDEX</span> idx_photo_group       <span class="k">ON</span> photos(group_id, taken_at);
+<span class="k">CREATE INDEX</span> idx_photo_project     <span class="k">ON</span> photos(project_id, state, taken_at);
+<span class="k">CREATE INDEX</span> idx_photo_item        <span class="k">ON</span> photos(project_id, item_id);
+<span class="c">-- 清单缺口：还没有任何已确认组的货品</span>
+<span class="k">CREATE INDEX</span> idx_item_project      <span class="k">ON</span> items(project_id, seq);
+<span class="c">-- OCR token 回查</span>
+<span class="k">CREATE INDEX</span> idx_token_photo       <span class="k">ON</span> ocr_tokens(photo_id);
+<span class="c">-- 检索</span>
+<span class="k">CREATE INDEX</span> idx_item_code         <span class="k">ON</span> items(code);</pre>
+
+<div class="card warn">
+  <div class="ct">交付前的强制校验 SQL（这是"人做决定"原则的技术落地）</div>
+<pre class="plain" style="margin:8px 0 0;">-- ① 不存在"有归属但没有确认记录"的照片。必须返回 0。
+SELECT COUNT(*) FROM photos p
+WHERE p.project_id = :pid AND p.item_id IS NOT NULL AND p.state = 'confirmed'
+  AND NOT EXISTS (
+    SELECT 1 FROM assignments a
+    WHERE a.target_type = 'photo' AND a.target_id = p.id
+      AND a.confirmed_at IS NOT NULL AND a.revoked_at IS NULL
+  );
+
+-- ② 不存在"有归属但没有确认记录"的组。必须返回 0。
+SELECT COUNT(*) FROM photo_groups g
+WHERE g.project_id = :pid AND g.item_id IS NOT NULL AND g.confirmed_at IS NULL;
+
+-- ③ OCR 采纳率（用于灰度期评估建议质量，不阻塞交付）
+SELECT
+  SUM(CASE WHEN item_id = suggested_item_id THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS accept_rate,
+  AVG(CASE WHEN item_id = suggested_item_id THEN 1.0 ELSE 0.0 END) AS accept_rate_2
+FROM assignments
+WHERE project_id = :pid AND source IN ('suggestion_confirmed','bulk_confirm')
+  AND suggested_item_id IS NOT NULL AND revoked_at IS NULL;</pre>
+</div>
+
+<h3>6.4 本地文件布局</h3>
+<pre class="plain">/Android/data/&lt;pkg&gt;/files/                  App 私有外置目录（无需重权限）
+└── projects/
+    └── {projectId}/
+        ├── raw/
+        │   └── {sessionId}/
+        │       ├── 20260922_085012_00001.jpg      ← 原始文件，永不改名
+        │       └── 20260922_085019_00002.jpg
+        ├── thumb/
+        │   └── {photoId}.jpg                      ← 256px 缩略图，列表用
+        ├── ocr/
+        │   └── {photoId}.json                     ← OCR 原始结果缓存
+        ├── delivery/                              ← 交付包生成区（可整体清理）
+        │   ├── 万象2026-0912/
+        │   ├── 万象2026-0912.zip
+        │   └── _联系表.pdf
+        └── project.json                           ← 项目元数据快照（纯文本，可脱离 APP 阅读）
+
+[设置 → 清理] 提供：删除缩略图缓存 / 删除交付包 / 删除已上传的原始文件（需二次确认）</pre>
+
+<div class="card tip">
+  <div class="ct">为什么原始文件永不改名</div>
+  交付包里的命名规范（<code>{序号}_{编码}_{n}.jpg</code>）是在<strong>打包时生成副本</strong>时应用的。本地原始文件保持不变，好处有三：
+  <ul style="margin:6px 0 0;">
+    <li>整理过程中改归属<strong>不需要动文件</strong>——只是数据库里一个字段的变化，零风险、零耗时</li>
+    <li>一个照片被重新指派时，不存在"删掉旧文件名再建新的"这种危险操作</li>
+    <li>交付包可以反复重新生成（换了打包选项、补拍后重打），每次都从原始文件重新命名，不会累积错误</li>
+  </ul>
+</div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="s7">
+<h2><span class="n">07</span> 关键模块实现</h2>
+
+<h3>7.1 时序分组算法</h3>
+<div class="fname">lib/domain/grouping/grouping_service.dart</div>
+<pre><span class="c">/// 把一次采集的照片按拍摄时序聚成组。纯函数，无副作用，可单测。</span>
+<span class="c">/// 分组只是"建议"——用户能在整理页手动合并/拆分，所以这里容错优先。</span>
+<span class="k">class</span> <span class="t">GroupingService</span> {
+  <span class="k">static const</span> gapThreshold = Duration(seconds: <span class="t">45</span>);
+  <span class="k">static const</span> maxPerGroup  = <span class="t">12</span>;
+
+  List&lt;List&lt;Photo&gt;&gt; group(List&lt;Photo&gt; photos, {required String sessionSource}) {
+    <span class="k">if</span> (photos.isEmpty) <span class="k">return const</span> [];
+
+    <span class="c">// 相册导入且时间戳不可信（全部相同 / 跨度 &lt; 2s）→ 每张独立成组</span>
+    <span class="k">if</span> (sessionSource == <span class="s">'album'</span> &amp;&amp; !_timestampsTrustworthy(photos)) {
+      <span class="k">return</span> photos.map((p) =&gt; [p]).toList();
+    }
+
+    <span class="k">final</span> sorted = [...photos]..sort((a, b) =&gt; a.takenAt.compareTo(b.takenAt));
+    <span class="k">final</span> groups = &lt;List&lt;Photo&gt;&gt;[];
+    <span class="k">var</span> current = &lt;Photo&gt;[sorted.first];
+
+    <span class="k">for</span> (<span class="k">var</span> i = <span class="t">1</span>; i &lt; sorted.length; i++) {
+      <span class="k">final</span> prev = sorted[i - <span class="t">1</span>], next = sorted[i];
+      <span class="k">final</span> gap  = Duration(milliseconds: next.takenAt - prev.takenAt);
+      <span class="k">final</span> ok   = gap &lt;= gapThreshold &amp;&amp; current.length &lt; maxPerGroup;
+      <span class="k">if</span> (ok) { current.add(next); } <span class="k">else</span> { groups.add(current); current = [next]; }
+    }
+    groups.add(current);
+    <span class="k">return</span> groups;
+  }
+
+  <span class="k">bool</span> _timestampsTrustworthy(List&lt;Photo&gt; ps) {
+    <span class="k">final</span> ts = ps.map((p) =&gt; p.takenAt).toSet();
+    <span class="k">if</span> (ts.length &lt;= <span class="t">1</span>) <span class="k">return false</span>;             <span class="c">// 全部同一时刻</span>
+    <span class="k">final</span> span = ps.map((p) =&gt; p.takenAt).reduce((a, b) =&gt; a &gt; b ? a : b)
+                 - ps.map((p) =&gt; p.takenAt).reduce((a, b) =&gt; a &lt; b ? a : b);
+    <span class="k">return</span> span &gt; <span class="t">2000</span>;                            <span class="c">// 跨度 &gt; 2 秒</span>
+  }
+}</pre>
+
+<h3>7.2 编码归一化与匹配</h3>
+<div class="fname">lib/domain/suggest/code_matcher.dart</div>
+<pre><span class="c">/// 编码归一化 + 与清单字典匹配。这一步的产出是「建议」，不是「归属」。</span>
+<span class="k">class</span> <span class="t">CodeMatcher</span> {
+  <span class="k">final</span> List&lt;ItemCode&gt; _items;
+  <span class="k">final</span> Map&lt;String, String&gt; _normIndex;   <span class="c">// 归一化编码 → itemId</span>
+
+  CodeMatcher(<span class="k">this</span>._items) : _normIndex = {
+    <span class="k">for</span> (<span class="k">final</span> it <span class="k">in</span> _items) normalize(it.code): it.id
+  };
+
+  <span class="c">/// 归一化：全角→半角、去空白、统一分隔符、数字段内形近纠偏</span>
+  <span class="k">static</span> String normalize(String raw) {
+    <span class="k">var</span> s = raw.trim().toUpperCase()
+      .replaceAll(RegExp(r<span class="s">r'[\s\-_·．。]'</span>), <span class="s">''</span>);          <span class="c">// 分隔符差异一律抹平</span>
+    s = s.replaceAllMapped(RegExp(<span class="s">r'[０-９Ａ-Ｚａ-ｚ]'</span>),
+        (m) =&gt; String.fromCharCode(m.group(<span class="t">0</span>)!.codeUnitAt(<span class="t">0</span>) - <span class="t">0xFEE0</span>)); <span class="c">// 全角转半角</span>
+    <span class="k">return</span> _fixConfusables(s);
+  }
+
+  <span class="c">/// 形近纠偏：只在纯数字段内替换，避免把合法的 O/I/S 字母改坏</span>
+  <span class="k">static const</span> _confuse = {<span class="s">'O'</span>: <span class="s">'0'</span>, <span class="s">'D'</span>: <span class="s">'0'</span>, <span class="s">'I'</span>: <span class="s">'1'</span>, <span class="s">'L'</span>: <span class="s">'1'</span>,
+                            <span class="s">'S'</span>: <span class="s">'5'</span>, <span class="s">'B'</span>: <span class="s">'8'</span>, <span class="s">'Z'</span>: <span class="s">'2'</span>, <span class="s">'G'</span>: <span class="s">'6'</span>};
+  <span class="k">static</span> String _fixConfusables(String s) {
+    <span class="k">final</span> buf = StringBuffer();
+    <span class="k">var</span> i = <span class="t">0</span>;
+    <span class="k">while</span> (i &lt; s.length) {
+      <span class="c">// 找出连续的数字段（含形近字符），整段一起纠偏</span>
+      <span class="k">final</span> seg = RegExp(<span class="s">r'[0-9OODIILLSSBBZZGG]+'</span>).matchAsPrefix(s, i);
+      <span class="k">if</span> (seg != <span class="k">null</span> &amp;&amp; seg.group(<span class="t">0</span>)!.length &gt;= <span class="t">2</span>) {
+        <span class="k">var</span> t = seg.group(<span class="t">0</span>)!;
+        <span class="c">// 仅当段内数字占多数时才纠偏，否则认为是纯字母词（如 "BOX"）</span>
+        <span class="k">final</span> digits = t.split(<span class="s">''</span>).where((c) =&gt; <span class="s">'0123456789'</span>.contains(c)).length;
+        <span class="k">if</span> (digits * <span class="t">2</span> &gt;= t.length) {
+          t = t.split(<span class="s">''</span>).map((c) =&gt; _confuse[c] ?? c).join();
+        }
+        buf.write(t); i += seg.group(<span class="t">0</span>)!.length;
+      } <span class="k">else</span> { buf.write(s[i]); i++; }
+    }
+    <span class="k">return</span> buf.toString();
+  }
+
+  <span class="c">/// 对一段 OCR 文本求最佳命中。返回 null 表示没找到像样的候选。</span>
+  <span class="t">MatchCandidate</span>? best(String tokenText, <span class="k">double</span> tokenConf) {
+    <span class="k">final</span> n = normalize(tokenText);
+    <span class="k">if</span> (n.length &lt; <span class="t">3</span>) <span class="k">return null</span>;
+
+    <span class="c">// ① 完全相等</span>
+    <span class="k">if</span> (_normIndex.containsKey(n)) {
+      <span class="k">return</span> <span class="t">MatchCandidate</span>(_normIndex[n]!, <span class="t">0.98</span> * tokenConf, <span class="s">'exact'</span>);
+    }
+    <span class="c">// ② token 包含清单编码（照片上多识别出前后缀）</span>
+    <span class="k">for</span> (<span class="k">final</span> e <span class="k">in</span> _normIndex.entries) {
+      <span class="k">if</span> (n.contains(e.key) &amp;&amp; e.key.length &gt;= <span class="t">4</span>) {
+        <span class="k">return</span> <span class="t">MatchCandidate</span>(e.value, <span class="t">0.86</span> * tokenConf, <span class="s">'prefix'</span>);
+      }
+    }
+    <span class="c">// ③ 编辑距离 1 / 2（用长度差预筛，避免全表算)</span>
+    <span class="t">MatchCandidate</span>? bestCand;
+    <span class="k">for</span> (<span class="k">final</span> e <span class="k">in</span> _normIndex.entries) {
+      <span class="k">final</span> d = e.key.length - n.length;
+      <span class="k">if</span> (d.abs() &gt; <span class="t">2</span>) <span class="k">continue</span>;
+      <span class="k">final</span> dist = levenshtein(n, e.key, cap: <span class="t">2</span>);
+      <span class="k">if</span> (dist == <span class="t">0</span>) <span class="k">continue</span>;
+      <span class="k">if</span> (dist &lt;= <span class="t">2</span>) {
+        <span class="k">final</span> base = dist == <span class="t">1</span> ? <span class="t">0.88</span> : <span class="t">0.72</span>;
+        <span class="k">final</span> c = <span class="t">MatchCandidate</span>(e.value, base * tokenConf, <span class="s">'edit$dist'</span>);
+        <span class="k">if</span> (bestCand == <span class="k">null</span> || c.score &gt; bestCand.score) bestCand = c;
+      }
+    }
+    <span class="k">return</span> bestCand;
+  }
+}</pre>
+
+<div class="card warn">
+  <div class="ct">形近纠偏的一个细节，值得单说</div>
+  <code>_fixConfusables</code> 只在"数字占多数的连续段"里做替换。原因：如果无脑全局替换，<code>BOX</code> 会被改成 <code>B0X</code>、<code>SL-100</code> 会被改成 <code>5L-100</code>——反而制造错误。<strong>需要先判断这个 token 到底是"数字编号"还是"字母词"。</strong>
+  <br><br>
+  这也是 Q2（编码形态）必须问清的原因：<strong>纠偏表必须按真实编码规则来定</strong>，通用规则一定会在某个客户的编码体系上翻车。
+</div>
+
+<h3>7.3 组级建议合成</h3>
+<div class="fname">lib/domain/suggest/suggest_service.dart（节选）</div>
+<pre><span class="c">/// 把组内每张照片的识别结果加权投票，得到组级建议。</span>
+<span class="c">/// 注意：产物写在 group.suggestedItemId / suggestionJson 上，</span>
+<span class="c">///       绝不写 group.itemId —— 那是人的领地（见 7.4）。</span>
+<span class="t">GroupSuggestion</span> synthesize(List&lt;<span class="t">PhotoOcrResult</span>&gt; results) {
+  <span class="k">final</span> votes = &lt;String, <span class="k">double</span>&gt;{};
+  <span class="k">final</span> evidence = &lt;<span class="t">String</span>, List&lt;<span class="t">String</span>&gt;&gt;{};
+
+  <span class="k">for</span> (<span class="k">final</span> r <span class="k">in</span> results) {
+    <span class="k">final</span> cands = &lt;<span class="t">MatchCandidate</span>&gt;[];
+    <span class="k">for</span> (<span class="k">final</span> t <span class="k">in</span> r.tokens) {
+      <span class="k">final</span> c = _matcher.best(t.text, t.confidence);
+      <span class="k">if</span> (c == <span class="k">null</span>) <span class="k">continue</span>;
+      <span class="c">// 位置权重：位于画面中心区域 / 字号较大的 token 更可能是主唛头</span>
+      <span class="k">final</span> pos = t.isCentral ? <span class="t">1.0</span> : <span class="t">0.85</span>;
+      <span class="k">final</span> sz  = t.relativeHeight &gt; <span class="t">0.06</span> ? <span class="t">1.0</span> : <span class="t">0.9</span>;
+      cands.add(c.scaled(pos * sz));
+    }
+    <span class="k">if</span> (cands.isEmpty) <span class="k">continue</span>;
+    cands.sort((a, b) =&gt; b.score.compareTo(a.score));
+    <span class="k">final</span> top = cands.first;
+    votes[top.itemId] = (votes[top.itemId] ?? <span class="t">0</span>) + top.score;
+    (evidence[top.itemId] ??= []).add(<span class="s">'${r.photoIndex}:${top.mode}(${top.score.toStringAsFixed(2)})'</span>);
+  }
+
+  <span class="k">if</span> (votes.isEmpty) {
+    <span class="k">return</span> <span class="t">GroupSuggestion</span>.none();          <span class="c">// → group.suggestState = no_suggestion</span>
+  }
+
+  <span class="k">final</span> ranked = votes.entries.toList()..sort((a, b) =&gt; b.value.compareTo(a.value));
+  <span class="k">final</span> winner = ranked.first;
+  <span class="k">final</span> conf   = (winner.value / results.length).clamp(<span class="t">0.0</span>, <span class="t">1.0</span>);
+  <span class="c">// 组内分歧：第二名紧咬第一名 → 标 conflict，提醒人看一眼</span>
+  <span class="k">final</span> conflict = ranked.length &gt; <span class="t">1</span>
+      &amp;&amp; ranked[<span class="t">0</span>].value - ranked[<span class="t">1</span>].value &lt; <span class="t">0.15</span> * results.length;
+
+  <span class="k">return</span> <span class="t">GroupSuggestion</span>(
+    itemId: winner.key,
+    confidence: conf,
+    candidates: ranked.take(<span class="t">3</span>).toList(),   <span class="c">// 交给 UI 做"改派"时的候选排序</span>
+    evidence: evidence[winner.key]!,
+    state: conflict ? <span class="s">'conflict'</span> : (conf &lt; <span class="t">0.40</span> ? <span class="s">'no_suggestion'</span> : <span class="s">'pending'</span>),
+  );
+}</pre>
+
+<h3>7.4 归属的唯一写入口</h3>
+<div class="fname">lib/domain/assign/assign_service.dart</div>
+<pre><span class="c">/// 全应用唯一允许写 photo.itemId / group.itemId 的地方。</span>
+<span class="c">/// 每个方法都必须带 confirmedBy —— 这是"人做决定"原则的代码化。</span>
+<span class="k">class</span> <span class="t">AssignService</span> {
+  <span class="k">final</span> <span class="t">AppDatabase</span> db;
+  <span class="k">final</span> String deviceName;   <span class="c">// 免登录下的最小身份标识</span>
+
+  <span class="c">/// 确认一个组的归属（用户点 ✓ 或 采纳建议）</span>
+  Future&lt;<span class="k">void</span>&gt; confirmGroup(String groupId, {
+    required String itemId,
+    required String source,          <span class="c">// suggestion_confirmed / manual / bulk_confirm</span>
+    <span class="t">MatchCandidate</span>? fromSuggestion,
+  }) =&gt; db.transaction(() <span class="k">async</span> {
+    <span class="k">final</span> now = DateTime.now().millisecondsSinceEpoch;
+
+    <span class="c">// ① 吊销该组此前未吊销的决策记录</span>
+    <span class="k">await</span> (db.update(db.assignments)..where((t) =&gt;
+        t.targetType.equals(<span class="s">'group'</span>) &amp; t.targetId.equals(groupId) &amp; t.revokedAt.isNull()))
+      .write(AssignmentsCompanion(revokedAt: Value(now)));
+
+    <span class="c">// ② 写新的决策记录（必须先写记录，再改归属）</span>
+    <span class="k">await</span> db.into(db.assignments).insert(AssignmentsCompanion.insert(
+      id: _uuid(), projectId: _projectOf(groupId),
+      targetType: <span class="s">'group'</span>, targetId: groupId, itemId: itemId,
+      source: source,
+      suggestedItemId: Value(fromSuggestion?.itemId),
+      suggestionConf: Value(fromSuggestion?.score),
+      confirmedAt: now, confirmedBy: deviceName,
+    ));
+
+    <span class="c">// ③ 更新组与组内所有照片</span>
+    <span class="k">await</span> (db.update(db.photoGroups)..where((t) =&gt; t.id.equals(groupId)))
+      .write(PhotoGroupsCompanion(itemId: Value(itemId), confirmedAt: Value(now)));
+    <span class="k">await</span> (db.update(db.photos)..where((t) =&gt; t.groupId.equals(groupId)))
+      .write(PhotosCompanion(itemId: Value(itemId), state: <span class="k">const</span> Value(<span class="s">'confirmed'</span>)));
+  });
+
+  <span class="c">/// 批量确认高置信组（"一键确认"）</span>
+  Future&lt;<span class="k">int</span>&gt; bulkConfirmHighConfidence(String projectId, <span class="k">double</span> threshold) <span class="k">async</span> {
+    <span class="c">// 一个货品只允许一个主组：已被占用的货品从候选里剔除</span>
+    <span class="k">final</span> taken = <span class="k">await</span> _assignedItemIds(projectId);
+    <span class="k">final</span> groups = <span class="k">await</span> (db.select(db.photoGroups)
+      ..where((t) =&gt; t.projectId.equals(projectId)
+        &amp; t.suggestState.equals(<span class="s">'pending'</span>)
+        &amp; t.suggestionConf.isBiggerOrEqualValue(threshold))
+      ..orderBy([(t) =&gt; OrderingTerm.desc(t.suggestionConf)])).get();
+
+    <span class="k">var</span> n = <span class="t">0</span>;
+    <span class="k">for</span> (<span class="k">final</span> g <span class="k">in</span> groups) {
+      <span class="k">final</span> iid = g.suggestedItemId;
+      <span class="k">if</span> (iid == <span class="k">null</span> || taken.contains(iid)) <span class="k">continue</span>;   <span class="c">// 冲突的跳过，交给人</span>
+      <span class="k">await</span> confirmGroup(g.id, itemId: iid, source: <span class="s">'bulk_confirm'</span>);
+      taken.add(iid); n++;
+    }
+    <span class="k">return</span> n;
+  }
+
+  <span class="c">/// 撤销（整理页可展开已确认列表撤销）</span>
+  Future&lt;<span class="k">void</span>&gt; revoke(String groupId) =&gt; db.transaction(() <span class="k">async</span> {
+    <span class="k">final</span> now = DateTime.now().millisecondsSinceEpoch;
+    <span class="k">await</span> (db.update(db.assignments)..where((t) =&gt;
+        t.targetType.equals(<span class="s">'group'</span>) &amp; t.targetId.equals(groupId) &amp; t.revokedAt.isNull()))
+      .write(AssignmentsCompanion(revokedAt: Value(now)));
+    <span class="k">await</span> (db.update(db.photoGroups)..where((t) =&gt; t.id.equals(groupId)))
+      .write(<span class="k">const</span> PhotoGroupsCompanion(itemId: Value.absent(), confirmedAt: Value.absent()));
+    <span class="k">await</span> (db.update(db.photos)..where((t) =&gt; t.groupId.equals(groupId)))
+      .write(<span class="k">const</span> PhotosCompanion(itemId: Value.absent(), state: Value(<span class="s">'unassigned'</span>)));
+  });
+}</pre>
+
+<div class="card ok">
+  <div class="ct">这段代码的注释就是设计文档</div>
+  注意 <code>confirmGroup</code> 里的注释：<strong>"必须先写记录，再改归属"</strong>。这个顺序保证了一个不变式——任何时刻都不存在"有归属但没有决策记录"的状态。如果反过来（先改归属、再写记录），中间崩溃就会留下一条无据可查的归属，而它可能流入交付包。<br><br>
+  <strong>整个 v3.0 的正确性保证，就落在这一条顺序上。</strong>
+</div>
+
+<h3>7.5 清单缺口查询</h3>
+<div class="fname">lib/domain/checklist/gap_query.dart</div>
+<pre><span class="c">/// 缺口视图：清单里有、但还没有任何照片的货品。</span>
+<span class="c">/// 这是唯一能回答"我漏拍了哪件货"的地方 —— 不依赖 OCR 是否成功。</span>
+<span class="k">final</span> gapQuery = db.customSelect(<span class="s">r'''</span>
+<span class="s">  SELECT i.id, i.seq, i.code, i.name, i.spec, i.qty, i.unit, i.required_photos
+  FROM items i
+  WHERE i.project_id = ?1
+    AND i.deleted_at IS NULL
+    AND i.state = 'normal'
+    AND NOT EXISTS (
+      SELECT 1 FROM photos p
+      WHERE p.project_id = i.project_id
+        AND p.item_id    = i.id
+        AND p.state      = 'confirmed'
+    )
+  ORDER BY i.seq
+</span><span class="s">'''</span>, variables: [Variable.withString(projectId)],
+  readsFrom: {db.items, db.photos});
+
+<span class="c">/// 反向缺口：现场有、清单没有的货品（整理阶段"创建为新货品"的产物）</span>
+<span class="k">final</span> extraQuery = db.customSelect(<span class="s">r'''</span>
+<span class="s">  SELECT * FROM items WHERE project_id = ?1 AND state = 'extra' ORDER BY seq</span>
+<span class="s">'''</span>, variables: [Variable.withString(projectId)], readsFrom: {db.items});
+
+<span class="c">/// 张数未达标的货品（要求 2 张，实际只有 1 张）—— 整理页的次级提醒</span>
+<span class="k">final</span> underShotQuery = db.customSelect(<span class="s">r'''</span>
+<span class="s">  SELECT i.id, i.code, i.name, COUNT(p.id) AS shot, i.required_photos
+  FROM items i LEFT JOIN photos p
+    ON p.item_id = i.id AND p.state = 'confirmed'
+  WHERE i.project_id = ?1 AND i.deleted_at IS NULL
+  GROUP BY i.id
+  HAVING shot &lt; i.required_photos
+  ORDER BY i.seq</span>
+<span class="s">'''</span>, variables: [Variable.withString(projectId)], readsFrom: {db.items, db.photos});</pre>
+
+<h3>7.6 打包导出与分享</h3>
+<div class="fname">lib/domain/export/export_service.dart（节选）</div>
+<pre><span class="c">/// 生成交付包。核心：按清单结构建目录、按规范命名副本、分批 flush 写 ZIP。</span>
+Future&lt;<span class="t">DeliveryResult</span>&gt; build(BuildContext ctx, String projectId, <span class="t">ExportOptions</span> opt,
+    <span class="k">void</span> Function(<span class="k">double</span>) onProgress) <span class="k">async</span> {
+  <span class="k">final</span> root   = <span class="k">await</span> _prepareDir(projectId);
+  <span class="k">final</span> folder = Directory(<span class="s">'${root.path}/${_safeName(projectName)}'</span>)..createSync(recursive: <span class="k">true</span>);
+  <span class="k">final</span> items  = <span class="k">await</span> _itemsWithPhotos(projectId);   <span class="c">// 含 not_found / extra</span>
+  <span class="k">var</span> done = <span class="t">0</span>;
+  <span class="k">final</span> total = items.fold&lt;<span class="k">int</span>&gt;(<span class="t">0</span>, (s, e) =&gt; s + e.photos.length);
+
+  <span class="k">for</span> (<span class="k">final</span> it <span class="k">in</span> items) {
+    <span class="k">if</span> (it.photos.isEmpty) <span class="k">continue</span>;
+    <span class="c">// 目录名：{3位序号}_{编码}_{品名简称}</span>
+    <span class="k">final</span> dir = Directory(<span class="s">'${folder.path}/${_dirName(it)}'</span>)..createSync();
+    <span class="k">var</span> n = <span class="t">0</span>;
+    <span class="k">for</span> (<span class="k">final</span> p <span class="k">in</span> it.photos) {
+      <span class="c">// 文件名：{编码}_{2位序号}.jpg —— 生成副本，不动原始文件</span>
+      <span class="k">final</span> name = <span class="s">'${it.codeSafe}_${(++n).toString().padLeft(2, '0')}.jpg'</span>;
+      File(p.filePath).copySync(<span class="s">'${dir.path}/$name'</span>);
+      onProgress(++done / total);
+    }
+  }
+
+  <span class="c">// 未使用的照片 → _未使用/（不删，给报告员一个交代）</span>
+  <span class="k">if</span> (opt.includeUnused) { <span class="k">await</span> _dumpUnused(folder, projectId); }
+
+  <span class="k">await</span> <span class="t">PdfService</span>.renderContactSheet(folder, projectId);   <span class="c">// _联系表.pdf</span>
+  <span class="k">await</span> <span class="t">XlsxService</span>.renderComparison(folder, projectId);     <span class="c">// _清单对照表.xlsx</span>
+  <span class="k">await</span> _writeManifest(folder, projectId, opt);              <span class="c">// _manifest.json</span>
+
+  <span class="k">final</span> zipPath = <span class="s">'${root.path}/${_safeName(projectName)}.zip'</span>;
+  <span class="k">await</span> _zipDir(folder, File(zipPath), onProgress: (v) =&gt; onProgress(<span class="t">0.9</span> + v * <span class="t">0.1</span>));
+  <span class="k">return</span> <span class="t">DeliveryResult</span>(zipPath, folder.path, ...);
+}
+
+<span class="c">/// 分享：PDF 优先（体积小、微信直传、可预览），ZIP 单独一个按钮</span>
+Future&lt;<span class="k">void</span>&gt; sharePdf(String path)  =&gt; SharePlus.instance.share(
+    ShareParams(files: [XFile(path)], subject: <span class="s">'预检照片联系表'</span>));
+Future&lt;<span class="k">void</span>&gt; shareZip(String path)  =&gt; SharePlus.instance.share(
+    ShareParams(files: [XFile(path)], subject: <span class="s">'预检照片交付包'</span>));</pre>
+
+<h3>7.7 WebDAV 上传队列</h3>
+<div class="fname">lib/data/webdav/upload_queue.dart</div>
+<pre><span class="c">/// 上传是交付的旁路，不是必经步骤 —— 失败不影响分享。</span>
+<span class="k">class</span> <span class="t">UploadQueue</span> {
+  <span class="k">static const</span> backoff = [<span class="t">1</span>, <span class="t">5</span>, <span class="t">15</span>, <span class="t">60</span>];   <span class="c">// 分钟</span>
+  <span class="k">static const</span> maxAttempts = <span class="t">5</span>;
+  <span class="k">static const</span> maxParallel = <span class="t">3</span>;
+  <span class="k">static const</span> chunkSize   = <span class="t">50</span> * <span class="t">1024</span> * <span class="t">1024</span>;
+
+  Future&lt;<span class="k">void</span>&gt; pump() <span class="k">async</span> {
+    <span class="k">if</span> (!_hasNetwork()) <span class="k">return</span>;                    <span class="c">// 无网不消耗</span>
+    <span class="k">final</span> batch = <span class="k">await</span> _dueTasks(limit: maxParallel);
+    <span class="k">await</span> Future.wait(batch.map(_uploadOne));
+  }
+
+  Future&lt;<span class="k">void</span>&gt; _uploadOne(<span class="t">UploadTask</span> t) <span class="k">async</span> {
+    <span class="k">try</span> {
+      <span class="k">final</span> size = File(t.localPath).lengthSync();
+      <span class="k">if</span> (size &lt;= chunkSize) {
+        <span class="k">await</span> _client.writeFromFile(t.localPath, t.remotePath);
+      } <span class="k">else</span> {
+        <span class="c">// 大文件分片：写 .part 后改名，兼容不支持 chunk 的服务器</span>
+        <span class="k">await</span> _client.writeFromFile(t.localPath, <span class="s">'${t.remotePath}.part'</span>);
+        <span class="k">await</span> _client.move(<span class="s">'${t.remotePath}.part'</span>, t.remotePath);
+      }
+      <span class="k">await</span> _markDone(t);
+    } <span class="k">catch</span> (e) {
+      <span class="k">final</span> n = t.attempts + <span class="t">1</span>;
+      <span class="k">if</span> (n &gt;= maxAttempts) {
+        <span class="k">await</span> _markFailed(t, e);                    <span class="c">// 转人工，不再重试</span>
+      } <span class="k">else</span> {
+        <span class="k">await</span> _reschedule(t, n, backoff[n - <span class="t">1</span>]);
+      }
+    }
+  }
+}</pre>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="s8">
+<h2><span class="n">08</span> 性能 · 异常处理 · 权限</h2>
+
+<h3>8.1 性能目标</h3>
+<table>
+  <thead><tr><th style="width:60px">阶段</th><th style="width:230px">指标</th><th style="width:120px">目标</th><th>保障手段</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="4"><span class="tag t-navy">采集</span></td><td>冷启动到可拍摄</td><td>≤ 2.0 s</td><td>相机预览优先初始化，DB 与列表延后</td></tr>
+    <tr><td>快门到可再次拍摄</td><td>≤ 400 ms</td><td>落盘走 isolate，主线程只收路径</td></tr>
+    <tr><td>连拍吞吐</td><td>≥ 10 张 / 5 s</td><td>原图直写文件，DB 批量提交</td></tr>
+    <tr><td>连续拍摄 8 小时</td><td>无掉帧、无过热降频、内存不持续增长</td><td><strong>采集期不跑 OCR</strong>、缩略图后台限速生成、逐批 flush 释放</td></tr>
+    <tr><td rowspan="3"><span class="tag t-violet">预处理</span></td><td>时序分组（1600 张）</td><td>≤ 2 s</td><td>纯内存计算，O(n)</td></tr>
+    <tr><td>缩略图生成（1600 张）</td><td>≤ 4 min</td><td>3 并发 isolate，降采样解码（不整图解码）、分批落盘</td></tr>
+    <tr><td>OCR 全量（1200 张）</td><td>≤ 10 min</td><td>先缩到长边 1600px；串行 1~2 路（避免抢 CPU 导致发热）、可中断续跑</td></tr>
+    <tr><td rowspan="4"><span class="tag t-orange">整理</span></td><td>整理页首屏</td><td>≤ 500 ms</td><td>虚拟滚动 + 缩略图内存缓存（LRU 120 张）</td></tr>
+    <tr><td>确认一组（落库）</td><td>≤ 50 ms</td><td>单事务批量 update</td></tr>
+    <tr><td>一键确认 100 组</td><td>≤ 800 ms</td><td>按货品预筛 + 单事务</td></tr>
+    <tr><td>候选检索响应</td><td>≤ 80 ms</td><td>Trie 前缀索引常驻内存；编辑距离仅对预筛结果计算</td></tr>
+    <tr><td rowspan="3"><span class="tag t-green">交付</span></td><td>PDF 联系表（400 件 / 1200 张）</td><td>≤ 3 min</td><td>缩略图复用，分页流式渲染</td></tr>
+    <tr><td>ZIP 打包（1200 张 / 2.5 GB）</td><td>≤ 8 min</td><td>每 20 张 flush；STORE 模式（照片已压缩，不再二次压缩）</td></tr>
+    <tr><td>WebDAV 上传 1 GB</td><td>取决于网络</td><td>并发 3、分片续传、失败退避</td></tr>
+  </tbody>
+</table>
+
+<h3>8.2 异常与应对</h3>
+<table>
+  <thead><tr><th style="width:150px">异常</th><th style="width:60px">阶段</th><th>应对</th></tr></thead>
+  <tbody>
+    <tr><td>存储空间不足</td><td>采集</td><td>采集前预检剩余空间（按 5MB/张 × 预计张数估算）；不足时提示并允许"仅拍标清"。采集过程中真的写失败 → <strong>红色全屏提示 + 保留已拍内容 + 暂停采集</strong>（这是少数允许打断采集的情况）</td></tr>
+    <tr><td>相机被其他 APP 占用</td><td>采集</td><td>提示"相机被占用，请关闭其他相机类应用"，提供重试；已拍内容不受影响</td></tr>
+    <tr><td>息屏 / 来电 / 切后台</td><td>采集</td><td>自动结束当前 session（不丢已拍），回来自动开新 session。整理页按 session 分组展示，用户可手动合并</td></tr>
+    <tr><td>相册照片 EXIF 无时间</td><td>采集</td><td>退化用文件修改时间；若该批时间戳全部不可信 → 全部独立成组（见 5.3.1）</td></tr>
+    <tr><td>ML Kit 初始化失败 / 不支持</td><td>预处理</td><td>自动降级"无建议模式"，顶部提示一次，<strong>不反复报错</strong>，全部走手动指派</td></tr>
+    <tr><td>OCR 中途 APP 被杀</td><td>预处理</td><td>任务持久化（<code>photos.ocr_state</code>），下次进入继续；已完成的不重跑</td></tr>
+    <tr><td>分组结果明显不对</td><td>整理</td><td>合并 / 拆分 / 移出三个操作随手可用。整理页提供「重新分组」按钮（保留已确认的归属不动）</td></tr>
+    <tr><td>同一货品被两个组占用</td><td>整理</td><td>确认第二个组时弹提示"ABC-1024 已被第 5 组占用"，提供「替换」（旧的退回待整理）或「取消」</td></tr>
+    <tr><td>误确认</td><td>整理</td><td>已确认列表可展开撤销，撤销后回到待确认（决策记录被 revoked，不是删除——留痕）</td></tr>
+    <tr><td>清单里没有这个货</td><td>整理</td><td>指派面板「创建为新货品」，填编码即建。该货品在对照表里标"清单外"</td></tr>
+    <tr><td>重复导入同一清单</td><td>导入</td><td>检测到 project 已有 item → 提示"已有 387 条货品，导入将合并 / 覆盖"，默认合并（保留已有照片归属）</td></tr>
+    <tr><td>导出时磁盘不足</td><td>交付</td><td>生成前先算预计体积 ×1.5 校验；生成中失败 → 清理半成品（不留脏目录）</td></tr>
+    <tr><td>微信分享失败（文件过大）</td><td>交付</td><td>提示"包体积 X MB，建议改发 PDF 联系表或走网盘"，提供一键切换</td></tr>
+    <tr><td>WebDAV 凭据失效</td><td>交付</td><td>队列暂停 + 通知"请在设置里重新测试连接"。<strong>不影响已完成的其他交付方式</strong></td></tr>
+    <tr><td>WebDAV 服务器不支持大文件</td><td>交付</td><td>回退分片策略（<code>.part</code> 后改名）；仍失败则标记人工处理</td></tr>
+    <tr><td>卸载重装 / 换机</td><td>全局</td><td>DB 与文件都在私有目录，卸载即失去。<strong>设置里提供"导出项目备份"（含 DB + 原图）</strong>，建议交付后立即上传 WebDAV 作为异地备份</td></tr>
+  </tbody>
+</table>
+
+<h3>8.3 权限清单</h3>
+<table>
+  <thead><tr><th style="width:230px">权限</th><th style="width:100px">必要性</th><th>用途与降级</th></tr></thead>
+  <tbody>
+    <tr><td><code>CAMERA</code></td><td><span class="tag t-red">必需</span></td><td>拍照。无降级</td></tr>
+    <tr><td><code>READ_MEDIA_IMAGES</code><br><span style="font-size:12px;color:#6b7280">(Android 13+)</span><br><code>READ_EXTERNAL_STORAGE</code><br><span style="font-size:12px;color:#6b7280">(Android 8~12)</span></td><td><span class="tag t-amber">按需</span></td><td>仅用于「相册导入」。用户不点这个入口就不申请——<strong>主动申请一个用不到的权限会让人不安</strong>。拒绝后该入口变灰并说明原因</td></tr>
+    <tr><td><code>INTERNET</code></td><td><span class="tag t-blue">可选</span></td><td>WebDAV 上传。无网时全部功能仍可用</td></tr>
+    <tr><td><code>ACCESS_NETWORK_STATE</code></td><td><span class="tag t-blue">可选</span></td><td>判断是否需要 pump 上传队列、是否提示"上传等 WiFi"</td></tr>
+    <tr><td><code>POST_NOTIFICATIONS</code></td><td><span class="tag t-gray">可选</span></td><td>后台上传进度。拒绝不影响功能</td></tr>
+    <tr><td class="del"><code>MANAGE_EXTERNAL_STORAGE</code></td><td colspan="2"><strong>明确不申请。</strong>Android 11+ 该权限会触发系统强警示（"允许访问所有文件"）、部分 ROM 直接拒绝、易被杀毒软件报毒。改用 App 私有外置目录 + 系统分享 / SAF 导出</td></tr>
+  </tbody>
+</table>
+
+<div class="card tip">
+  <div class="ct">文件存储策略</div>
+  <strong>采集</strong>：写 App 私有外置目录 <code>/Android/data/&lt;pkg&gt;/files/projects/…</code>，不需要任何存储权限。<br>
+  <strong>导出</strong>：① 系统分享（微信等）；② SAF 让用户选一个目录导出（用 SAF 就不需要权限）；③ WebDAV 上传。<br>
+  <strong>报告员拿文件的路径</strong>：微信 / 网盘——两条都不依赖"把文件写到手机公共相册"。
+</div>
+
+<h3>8.4 分发与更新</h3>
+<table>
+  <thead><tr><th style="width:140px">项</th><th>方案</th></tr></thead>
+  <tbody>
+    <tr><td>打包</td><td><code>flutter build apk --release --split-per-abi</code>，仅出 arm64-v8a（现代机型）</td></tr>
+    <tr><td>签名</td><td>自建 keystore，密钥入公司密码库；<strong>切勿提交到仓库</strong></td></tr>
+    <tr><td>分发</td><td>内部：企业微信 / 内网共享盘放 APK + 版本说明。不做应用商店上架</td></tr>
+    <tr><td>更新</td><td>启动时可选检查内网版本文件（<code>version.json</code>），有新版本时提示下载链接。<strong>不做静默强制更新</strong></td></tr>
+    <tr><td>兼容基线</td><td>Android 8.0 (API 26) ~ 15；主线适配 2~3 款配发机型</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="s9">
+<h2><span class="n">09</span> 测试方案与验收标准</h2>
+
+<h3>9.1 核心验收指标</h3>
+
+<div class="card warn">
+  <div class="ct">v3.1 改了指标口径：从「300 张/200 件 ≤12min」改成按真实规模分档</div>
+  旧口径（300 张 / 200 件）比真实规模小 3~8 倍，拿它当验收线<strong>等于没验</strong>。新口径按老板确认的规模（<strong>几百件 / 600~1600 张 / 持续 1 天</strong>）重定，并把「覆盖率 80% 达标」变成硬指标。
+</div>
+
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:200px">指标</th><th style="width:170px">目标值</th><th>验证方式</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td><td><strong>交付包归属完整性</strong><span class="tag t-red" style="margin-left:6px">硬指标</span></td>
+      <td><strong>100%</strong></td>
+      <td>自动校验：交付包中每一张正片都有对应的、未吊销的 <code>assignment</code> 记录。<strong>机器断言，不靠人看</strong>（见 6.3 的校验 SQL）</td>
+    </tr>
+    <tr>
+      <td>2</td><td><strong>整理耗时（含 OCR ＋ 全手动两种）</strong><span class="tag t-red" style="margin-left:6px">重定</span></td>
+      <td>400 件 / 1200 张<br>≤ <strong>30 min</strong></td>
+      <td>真人实测 3 次取中位数。<strong>计时含中断</strong>（按实际作业时长计，允许分多次）。分档记录：≥80% 由 OCR 清掉时 ≤20 min；纯手动 ≤45 min</td>
+    </tr>
+    <tr>
+      <td>3</td><td><strong>清单覆盖率</strong><span class="tag t-red" style="margin-left:6px">v3.1 新增</span></td>
+      <td>灰度实测值 ≥ 80%</td>
+      <td>有照片的货品数 / 清单货品数。<strong>这是业务验收线，也是唯一反映"现场拍得够不够"的数</strong>。低于 80% 要看是流程问题还是 APP 问题（如采集页不好用导致漏拍）</td>
+    </tr>
+    <tr>
+      <td>4</td><td><strong>OCR 建议采纳率</strong></td>
+      <td>≥ 80%</td>
+      <td>统计 <code>assignment.source IN (suggestion_confirmed, bulk_confirm)</code> 中 <code>item_id = suggested_item_id</code> 的比例。<strong>低于 60% 说明建议没价值，需补强或考虑下线</strong></td>
+    </tr>
+    <tr>
+      <td>5</td><td><strong>一键确认覆盖率</strong></td>
+      <td>≥ 60%</td>
+      <td>被 <code>bulk_confirm</code> 处理的照片 / 已确认照片总数。低于 40% 说明分组或建议质量有问题</td>
+    </tr>
+    <tr>
+      <td>6</td><td><strong>采集零打扰</strong></td>
+      <td>0 次弹窗</td>
+      <td>自动化测试：模拟连续拍摄 <strong>1600 张</strong>，断言采集页未触发任何 Dialog / SnackBar / 网络请求</td>
+    </tr>
+    <tr>
+      <td>7</td><td><strong>离线可用</strong></td><td>全流程可用</td>
+      <td>飞行模式下完成：导入清单 → 采集 → 整理 → 打包（跳过上传）→ 本地导出</td>
+    </tr>
+    <tr>
+      <td>8</td><td><strong>OCR 可关闭</strong></td><td>功能不缺失</td>
+      <td>关闭 OCR 后，完成 400 件货的全手动指派，整理耗时 ≤ 45 min</td>
+    </tr>
+    <tr>
+      <td>9</td><td><strong>分组准确度</strong></td>
+      <td>人工修正率 ≤ 15%</td>
+      <td>灰度期统计：被合并/拆分/移出过的组 / 总组数。超过 25% 说明 45 秒阈值或现场拍摄习惯与假设不符</td>
+    </tr>
+    <tr>
+      <td>10</td><td><strong>长时作业稳定性</strong><span class="tag t-amber" style="margin-left:6px">v3.1 新增</span></td>
+      <td>连续 8 小时无崩溃</td>
+      <td>真实规模是<strong>持续一天</strong>，不是 1 小时。需实测：连续拍摄 1600 张 + 中途多次进出整理页 + 息屏唤醒，断言无崩溃、无内存持续增长、无照片丢失</td>
+    </tr>
+    <tr>
+      <td>11</td><td><strong>异常可恢复</strong></td><td>0 数据丢失</td>
+      <td>随机杀进程 20 次（采集/整理各 10 次），断言已落盘内容完整、进度不丢</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="card ok">
+  <div class="ct">指标 1 为什么可以做到 100%（这条不变，是本方案的地基）</div>
+  因为架构上<strong>不存在"机器写归属"的路径</strong>。归属只能由 <code>AssignService</code> 写入，而它的每个方法都要求 <code>confirmedBy</code>。所以"交付包里有没有未确认的归属"不是一个统计概率问题，而是一个<strong>结构性问题——答案是恒定的"没有"</strong>。
+  <br><br>
+  这正是把 OCR 降级为"建议"带来的最大收益：<strong>正确性不再依赖 OCR 精度</strong>，只依赖代码结构。
+</div>
+
+<div class="card viol">
+  <div class="ct">指标 1 和指标 3 是两回事，不要混</div>
+  <table style="margin:8px 0 0;">
+    <thead><tr><th style="width:170px">指标</th><th>管什么</th><th>做不到会怎样</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>指标 1 · 归属完整性</strong></td>
+        <td>照片和货品的对应关系<strong>有没有搞错</strong></td>
+        <td>报告里张冠李戴 —— <strong>致命，不可接受</strong>。所以是硬指标，且靠结构保证</td>
+      </tr>
+      <tr>
+        <td><strong>指标 3 · 清单覆盖率</strong></td>
+        <td>清单里的货<strong>拍到了几成</strong></td>
+        <td>报告里少几件 —— <strong>可接受</strong>（业务上 80% 就够），但要如实写进交付包</td>
+      </tr>
+    </tbody>
+  </table>
+  <br>
+  v3.0 把这两件事混在一起当成"都要 100%"，结果是把一个<strong>业务上可接受的缺口</strong>，做成了<strong>工程上不可承受的负担</strong>。v3.1 把它们拆开：<strong>对应关系必须绝对正确，覆盖率只要够用就行。</strong>
+</div>
+
+<h3>9.2 测试包构成</h3>
+<table>
+  <thead><tr><th style="width:150px">类型</th><th style="width:90px">规模</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>单元测试</td><td>~40 例</td><td>分组算法（边界：0/1/12/13 张、间隔 44.9s/45.1s、相册时间戳不可信）、编码归一化（全角/分隔符/形近纠偏/纯字母词不误改）、匹配打分、编辑距离</td></tr>
+    <tr><td>集成测试</td><td>~20 例</td><td>AssignService 事务顺序、bulkConfirm 的货品占用排除、撤销、缺口查询、导出目录结构与命名、交付前校验 SQL</td></tr>
+    <tr><td>UI 测试</td><td>~15 例</td><td>采集页无弹窗断言、整理页首屏渲染、批量确认、指派面板搜索、Tab 角标更新</td></tr>
+    <tr><td>真机性能测试</td><td>3 机型</td><td>连拍 1600 张不掉帧、OCR 1200 张耗时、ZIP 2.5GB 打包耗时、内存峰值与长时间漂移</td></tr>
+    <tr><td><strong>现场实测</strong></td><td>3 次真实任务</td><td>2~3 名真实预检员，各完成 1 次完整预检（<strong>≥400 件货、整天作业</strong>），全程录屏 + 计时 + 事后访谈</td></tr>
+  </tbody>
+</table>
+
+<h3>9.3 灰度验收流程</h3>
+<pre class="plain">第 1 轮（M3 后，纯手动模式）
+  目标：验证「采集 + 整理 + 交付」这条主干能不能跑通（按真实规模）
+  判据：一次真实任务（≥400 件）整理耗时 ≤ 45 min（无 OCR 辅助）、
+        覆盖率能算出数、零阻断问题、零数据丢失、连续作业不崩
+  → 通过则主干锁定，后续只做增强
+  ⚠️ 这一轮同时要拿到一个关键数字：真实覆盖率是多少？
+     它决定「80% 达标线」是否要按客户/货种调整
+
+第 2 轮（M4 后，接入 OCR 建议）
+  目标：验证建议是否真的让人变快
+  判据：建议采纳率 ≥ 80%、一键确认覆盖率 ≥ 60%、整理耗时降到 ≤ 20 min
+  → 未达标则回到 M4 调优（改归一化规则 / 促精度），不动主干
+
+第 3 轮（M6，上线前）
+  目标：长时稳定性 + 真实环境覆盖
+  判据：连续 5 次真实任务（含至少 2 次全天作业）无崩溃、
+        WebDAV 上传成功率 ≥ 95%、微信分享成功率 ≥ 95%
+  → 通过则正式分发</pre>
+
+<div class="card new">
+  <div class="ct">v3.1 新增一条灰度观测项：覆盖率分布</div>
+  第 1 轮和第 3 轮都要记录<strong>每次任务的实际覆盖率</strong>，并观察：
+  <table style="margin:8px 0 0;">
+    <thead><tr><th style="width:210px">观察结果</th><th>说明什么</th></tr></thead>
+    <tbody>
+      <tr><td>稳定在 80~95%</td><td>正常。达标线 80% 定得合适，不必动</td></tr>
+      <tr><td>普遍 &lt; 70%</td><td>要么是业务本身就这样（那达标线要下调），要么是<strong>采集页有问题让人漏拍</strong>（那要改 APP 而不是改线）</td></tr>
+      <tr><td>普遍 &gt; 95%</td><td>业务实际能力比预期强，达标线可以上调，避免放行过于宽松</td></tr>
+      <tr><td>不同客户差异很大</td><td>达标线需要<strong>按项目可配</strong>，不能写死在代码里</td></tr>
+    </tbody>
+  </table>
+  <br>
+  ⚠️ 这也意味着：<strong>80% 这个数必须做成可配置项</strong>，写死在 <code>constants.dart</code> 里是一种偷懒。已按此调整 M3 的交付范围（见 §10）。
+</div>
+
+<div class="card warn">
+  <div class="ct">一条灰度纪律</div>
+  第 1 轮<strong>必须先于</strong>第 2 轮完成，且第 1 轮不得开启 OCR。因为第 1 轮要验证的是"整理页到底好不好用"——如果同时开着 OCR，出了问题你分不清是"整理页设计不好"还是"OCR 建议不准"。<strong>先验证主干，再叠加增强</strong>，这是本方案排期的核心纪律。
+</div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+<h2><span class="n">10</span> 排期与里程碑</h2>
+
+<div class="card new">
+  <div class="ct">本版排期的关键调整</div>
+  v2.0 把 <strong>OCR POC 放在最前面且是阻塞项</strong>（因为 OCR 是主路径引擎，它不行方案就塌）。<br>
+  v3.0 里 <strong>OCR 不再是阻塞项</strong>——它是可插拔的增强。所以 POC 挪到 M0 与主干并行，<strong>即使 POC 结果不理想，主干开发完全不受影响</strong>。
+</div>
+
+<div class="card new">
+  <div class="ct">v3.1 对里程碑判据的调整</div>
+  上一版的所有通过判据都是按 <strong>200 件 / 300 张</strong> 写的，属于乐观量级。按现场真实规模（<strong>几百件 / 每件 2 张 / 持续 1 天</strong>），判据必须整体放大到 <strong>400 件 / 1200 张</strong> 这个量级，否则"通过"了也没有意义。<br><br>
+  另外 <strong>M3 新增一项交付：覆盖率达标线可配置</strong>（80% 不写死，见 §9.3 与 R1c）。这是 v3.1 明确承诺的，不是"有空再说"。
+</div>
+
+<table>
+  <thead><tr><th style="width:70px">里程碑</th><th style="width:70px">时长</th><th>内容</th><th style="width:230px">通过判据</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>M0</strong></td><td>3~4 天</td>
+      <td>需求冻结 · 真实清单与标签照片样本分析 · <strong>OCR POC（并行，不阻塞主干）</strong></td>
+      <td>POC 报告：识别率、失败类型分布、形近纠偏表建议值。若 POC 失败 → 直接进"无 OCR 模式"，主干照旧</td>
+    </tr>
+    <tr>
+      <td><strong>M1</strong></td><td>1 周</td>
+      <td>工程骨架 · 数据层（11 张表）· 清单导入向导（列映射 + 校验）· 项目工作台 · <strong>覆盖率达标线配置项</strong></td>
+      <td>能导入 <strong>400 行以上</strong>的真实 Excel（几百件量级），货品列表正确、滚动流畅，重复/空编码被正确拦截</td>
+    </tr>
+    <tr>
+      <td><strong>M2</strong></td><td>1.5 周</td>
+      <td>采集模块：相机、连拍、曝光/对焦、原图落盘、缩略图、批次管理、相册导入 · <strong>长时作业资源管理</strong></td>
+      <td>飞行模式下连续拍 <strong>1200 张</strong>：无卡顿、无弹窗、无网络请求、退出重进进度不丢，<strong>过程内存不持续增长</strong></td>
+    </tr>
+    <tr style="background:#fff8f5;">
+      <td><strong>M3</strong><br><span class="tag t-red">关键</span></td><td>2 周</td>
+      <td><strong>整理工作台</strong>：分组卡片流、批量确认、指派面板（候选/搜索/扫码/新建货品）、<strong>覆盖率仪表 + 缺口视图</strong>、分组算法 · <strong>现场随手清 / 收工统一过双路径</strong></td>
+      <td><strong>第 1 轮灰度</strong>：纯手动模式完成 <strong>≥400 件货对应，≤ 45 min</strong>，可分批中断续做，零阻断。<span class="tag t-red">通过即主干锁定</span></td>
+    </tr>
+    <tr>
+      <td><strong>M4</strong></td><td>1 周</td>
+      <td>OCR 建议引擎接入（可开关）· 编码归一化与匹配 · 组级建议合成 · 预处理可中断 · 建议采纳率埋点</td>
+      <td><strong>第 2 轮灰度</strong>：建议采纳率 ≥ 80%，一键确认覆盖率 ≥ 60%，整理耗时 <strong>≤ 20 min</strong></td>
+    </tr>
+    <tr>
+      <td><strong>M5</strong></td><td>1 周</td>
+      <td>交付模块：ZIP 组装与命名规范 · PDF 联系表 · 清单对照表 · <span class="tag t-amber">清单缺口.txt</span> · manifest · 微信分享 · WebDAV 上传队列</td>
+      <td>生成的交付包能被报告员直接用于排版，无需二次整理；<strong>覆盖率不足时也能按流程出包（带缺口说明）</strong></td>
+    </tr>
+    <tr>
+      <td><strong>M6</strong></td><td>1 周</td>
+      <td><strong>第 3 轮灰度</strong>（2~3 名预检员 × 3~5 次真实任务，<strong>含整天作业</strong>）· 缺陷修复 · 性能打磨 · APK 打包与分发</td>
+      <td>连续 5 次任务无崩溃；<strong>单次整天作业（8 小时 / 上千张）全程稳定</strong>；上传/分享成功率 ≥ 95%；用户主观评价"比现在省事"</td>
+    </tr>
+    <tr style="background:#f4f7fa;font-weight:700;">
+      <td colspan="2">合计</td><td colspan="2">7.5 ~ 8 周（1~2 人）</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="card ok">
+  <div class="ct">最早可以灰度的时间点：<strong>第 5.5 周（M3 结束）</strong></div>
+  M3 结束时，APP 已经是一个<strong>完整可用的工具</strong>——采集、整理、交付三段全通，只是没有 OCR 建议（整理全手动）。这时候就可以让真实预检员用起来，而且<strong>用到的反馈能直接指导 M4 的 OCR 该往哪个方向做</strong>。
+  <br><br>
+  这是 v3.0 排期的最大好处：<strong>不必等 OCR 调好才能给人用</strong>。v2.0 因为 OCR 是主路径，不给 OCR 留出足够时间就不敢交付——整个周期被 OCR 的进度绑架。
+</div>
+
+<div class="card warn">
+  <div class="ct">v3.1 排期的一处风险提示</div>
+  整体周期 <strong>不变</strong>（7.5 ~ 8 周），但<strong>判据的难度是显著上升的</strong>——M2 从 300 张变为 1200 张，M3 从 200 件/25 min 变为 400 件/45 min。<br><br>
+  这不是把工期藏起来，而是<strong>把"通过"这两个字的含金量补齐</strong>：上一版的判据在真实规模下会轻易通过，但通过之后用户仍然不满意——那种"假通过"是排期里最危险的东西。<br><br>
+  如果 M3 判定纯手动确实压不进 45 min，<strong>不要靠加班硬顶，直接按 R1 的第 ④ 条走</strong>：把 M4 的 OCR 投入加大。此时它是唯一剩下的杠杆。
+</div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+<h2><span class="n">11</span> 风险与开放问题</h2>
+
+<h3>11.1 风险登记</h3>
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:190px">风险</th><th style="width:70px">等级</th><th>影响</th><th style="width:260px">缓解措施</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>R1</td><td><strong>整理页效率不达标</strong><span class="tag t-red" style="margin-left:6px">头号</span></td><td><span class="tag t-red">高</span></td>
+      <td>这是本方案唯一的关键路径。按真实规模（<strong>几百件 / 上千张 / 持续一天</strong>），如果整理要 2 小时以上，用户会觉得"还不如自己拿文件夹归"——整个方案的价值就不成立了</td>
+      <td>① M3 就灰度拿真实耗时数据，不留到最后 ② 八个提速手段逐个压测 ③ <strong>批次（Burst）分组是这一版新增的主要杠杆</strong>——让整理按批推进，避免面对上千张的全局数字 ④ 若纯手动压不到 45 min，加大 M4 的 OCR 投入（此时它是唯一的杠杆） ⑤ 最后的退路：整理页拆成"只处理未对应"的极简模式</td>
+    </tr>
+    <tr>
+      <td>R1b</td><td><strong>长时作业下的资源与稳定性</strong><span class="tag t-amber" style="margin-left:6px">v3.1 新增</span></td><td><span class="tag t-red">高</span></td>
+      <td>一天连续作业、上千张照片累积，可能出现内存持续增长、缩略图缓存撑爆、SQLite 变慢、发热降频 —— 这些在 1 小时的测试里看不出来</td>
+      <td>① 缩略图一律降采样落盘，不常驻内存 ② 整理页用分页查询，不一次性加载全部 ③ 列表虚拟化，只渲染可见项 ④ <strong>必须做 8 小时连续作业实测</strong>（见指标 10），不能只做短时压测 ⑤ 感知到发热/低电时主动提示，并提供标清采集模式</td>
+    </tr>
+    <tr>
+      <td>R1c</td><td>覆盖率达标线定错<span class="tag t-amber" style="margin-left:6px">v3.1 新增</span></td><td><span class="tag t-amber">中</span></td>
+      <td>80% 是我们从"通常能到 80% 以上"反推的。如果定太高，会逼着人为了凑数去拍无意义的照片；定太低，会放行明显不足的批次</td>
+      <td>① <strong>做成按项目可配</strong>，不写死 ② 灰度期收集实际覆盖率分布（见 §9.3） ③ 界面提示措辞用"低于常见达标线"而不是"不达标"——APP 不替业务下判断</td>
+    </tr>
+    <tr>
+      <td>R2</td><td>分组算法不符合现场拍摄习惯</td><td><span class="tag t-amber">中</span></td>
+      <td>45 秒阈值定错 → 组过碎（人要点很多次）或过粗（一组混了多件货）</td>
+      <td>① 分组结果<strong>只是建议</strong>，可手动修正，不会导致错误归属 ② 埋点统计人工修正率，超过 25% 就调参数 ③ 45 秒是初始值，灰度后用真实数据重定</td>
+    </tr>
+    <tr>
+      <td>R3</td><td>OCR 建议质量差，形同虚设</td><td><span class="tag t-amber">中</span></td>
+      <td>采纳率低 → 用户觉得建议是噪音，甚至要求关掉</td>
+      <td>① <strong>不影响交付正确性</strong>（这是架构保证的，不是缓解） ② 设置里可一键关闭，界面立即清爽 ③ 采纳率 &lt; 60% 时主动建议用户关闭，别硬撑</td>
+    </tr>
+    <tr>
+      <td>R4</td><td>Android 相机碎片化</td><td><span class="tag t-amber">中</span></td>
+      <td>某些机型对焦慢、连拍卡、EXIF 时间缺失</td>
+      <td>① 锁定 2~3 款配发机型优先适配，不追求全机型覆盖 ② 提供"兼容模式"（降分辨率、关连拍） ③ EXIF 缺失时退化用文件时间</td>
+    </tr>
+    <tr>
+      <td>R5</td><td>PDF 联系表体积过大</td><td><span class="tag t-amber">中</span><span class="tag t-amber" style="margin-left:4px">v3.1 调级</span></td>
+      <td>按真实规模，<strong>1200 张</strong>照片的联系表可能 <strong>100~250 MB</strong>，微信传输基本不可用</td>
+      <td>① 联系表用缩略图（长边 1200px），并提供"精简版"（长边 800px） ② <strong>默认按批次/货品大类分册输出多份 PDF</strong>，避免单文件过大 ③ 超过 50MB 时明确提示改走网盘 ④ 实测体积后再定默认档位</td>
+    </tr>
+    <tr>
+      <td>R6</td><td>微信分享大文件失败</td><td><span class="tag t-green">低</span></td>
+      <td>原始照片 ZIP 按真实规模可能 <strong>2 GB+</strong></td>
+      <td>① 主推 PDF 联系表（微信直传首选） ② ZIP 走 WebDAV ③ 分享前显示体积并给出建议</td>
+    </tr>
+    <tr>
+      <td>R7</td><td>存储空间不足</td><td><span class="tag t-amber">中</span></td>
+      <td>一次预检可能产生 1.5~3 GB 照片</td>
+      <td>① 采集前预检空间 ② 提供"上传后清理原图" ③ 提供标清采集模式</td>
+    </tr>
+    <tr>
+      <td>R8</td><td>用户绕过整理直接交付</td><td><span class="tag t-green">低</span></td>
+      <td>为赶时间，带着一堆未确认的照片就生成交付包</td>
+      <td>① 交付页<strong>显性提示</strong>"未确认 N 张"，但不硬拦（尊重现场判断） ② 对照表和 PDF 上标注未确认项 ③ <strong>宁可有标记的不完整，也不要无标记的错误</strong></td>
+    </tr>
+    <tr>
+      <td>R9</td><td>卸载导致数据丢失</td><td><span class="tag t-green">低</span></td>
+      <td>文件在私有目录，卸载即失去</td>
+      <td>① 设置里提供"导出项目备份" ② 交付后引导用户立即上传 WebDAV 作为异地备份</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>11.2 开放问题</h3>
+<table>
+  <thead><tr><th style="width:44px">#</th><th style="width:220px">问题</th><th style="width:70px">影响</th><th>为什么需要你拍板</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Q1</strong></td><td><strong>货品编码长什么样？</strong>（含不含中文、有无固定前缀/长度/校验位、是字母还是数字为主）</td>
+      <td><span class="tag t-red">高</span></td>
+      <td>决定 §7.2 的<strong>归一化规则与形近纠偏表</strong>。通用规则一定会误伤某些客户的编码体系——比如给 <code>BOX-001</code> 做 O→0 纠偏就错了。<strong>这是 OCR 建议质量的分水岭。</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Q2</strong></td><td>单次预检的典型规模</td>
+      <td><span class="tag t-green">已答</span></td>
+      <td><strong>✅ 09-23 已确认</strong>：几百件货 · 每件原则上 2 张 · 预检+拍照持续 1 天 · <strong>覆盖率 80% 以上即可满足要求</strong>。已据此把验收指标改为按真实规模分档（§9.1），并把达标口径从"100% 对应"改为"覆盖率 ≥80%"（§5.4）。<br><strong>仍需补充</strong>：具体是 200~300 还是 600~800？这决定性能压测的档位，但不阻塞开工。</td>
+    </tr>
+    <tr>
+      <td><strong>Q3</strong></td><td>后端报告员期望的交付格式，是否有固定的包结构模板？</td>
+      <td><span class="tag t-red">高</span></td>
+      <td>决定 §5.5 的目录命名与 PDF 联系表版式。<strong>如果报告员有现成模板，我们应该直接对齐，而不是自创一套让他再改一遍。</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Q4</strong></td><td>清单里"有货但没拍照"的缺口，是否需要出现在正式报告里？</td>
+      <td><span class="tag t-amber">中</span></td>
+      <td>我的判断是<strong>必须出现</strong>——它是报告里"未装/短装"结论的直接依据。但需要确认后端报告模板里有没有承接这个信息的位置。<br>⚠️ 注意 v3.1 已把措辞从「现场未见」改为<strong>「缺口」</strong>（见 §5.5）——因为"现场未见"替业务下了判断，而缺口的原因是多样的：货未到、已被提走、压在垛底、漏拍，性质完全不同。<strong>这个问题要问的其实是"缺口清单该以什么口径进报告"。</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Q5</strong></td><td>每件货默认拍几张够用？（当前默认 2 张）</td>
+      <td><span class="tag t-green">已答·采纳</span></td>
+      <td><strong>✅ 09-23 已确认</strong>：原则上每件 2 张——当前默认值即为 2，<strong>无需改动</strong>。但仍保留"张数少于 N 张"的提醒能力（按项目可配），用于发现个别货品拍漏了的情况。</td>
+    </tr>
+    <tr>
+      <td><strong>Q6</strong></td><td>配发的手机型号？是否统一采购？</td>
+      <td><span class="tag t-amber">中</span></td>
+      <td>决定相机适配的重点机型与"兼容模式"的必要性。统一机型能省掉大量适配成本。</td>
+    </tr>
+    <tr>
+      <td><strong>Q7</strong></td><td>WebDAV 由公司提供（Nextcloud/群晖）还是用坚果云等第三方？</td>
+      <td><span class="tag t-gray">低</span></td>
+      <td>影响限流适配与并发参数。私有云可控性高但需要配外网访问（域名 + HTTPS）。</td>
+    </tr>
+    <tr>
+      <td><strong>Q8</strong></td><td>是否需要多人协作同一项目（如两人分区域拍）？</td>
+      <td><span class="tag t-gray">低</span></td>
+      <td>若需要，采集批次要加"操作人"维度，WebDAV 上要做合并。当前设计是单机单项目，多人协作需要额外设计——<strong>建议第一期不做</strong>。</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="card tip">
+  <div class="ct">下一步建议</div>
+  <strong>最需要你提供的东西（半天内就能给出结论）：</strong>
+  <ol style="margin:6px 0 0;">
+    <li><strong>2~3 份真实货品清单 Excel</strong>（用于验证导入向导与列映射的健壮性——按几百件量级，最好有一份"列名不规范"的）</li>
+    <li><strong>20~30 张真实货品标签照片</strong>（用于 OCR POC，实测识别率与失败类型）</li>
+    <li><strong>报告员现在收到的照片是怎么组织的</strong>（用于对齐 §5.5 的交付格式）</li>
+    <li><strong>一次真实预检的作业记录</strong>（几件货、拍了几张、拍了一整天——用于把 §9.1 的性能档位从估算变成实测）</li>
+  </ol>
+  <br>
+  有了这些，M0 可以直接启动，M3 的第十六天左右你就可以拿到一个<strong>能真实干活的 APK</strong>——那时候讨论"整理页到底好不好用"，比现在讨论任何设计细节都有价值。
+</div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <div><strong>预检拍照 APP · 完整设计实现方案 v3.1</strong> · 生成于 2026-09-23</div>
+  <div style="margin-top:6px;">三段式主路径：批量采集 → 统一对应 → 打包交付 ｜ OCR 定位：智能辅助，不做决策 ｜ 平台 Android 8.0+ · Flutter</div>
+</footer>
+
+<script>
+(function(){
+  var links = [].slice.call(document.querySelectorAll('nav.toc a'));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function onScroll(){
+    var y = window.scrollY + 90, idx = 0;
+    for (var i=0;i<secs.length;i++){ if (secs[i] && secs[i].offsetTop <= y) idx = i; }
+    links.forEach(function(a,i){ a.classList.toggle('active', i===idx); });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

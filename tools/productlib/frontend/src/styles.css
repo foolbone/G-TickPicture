@@ -1,0 +1,327 @@
+/* ══════════════════════════════════════════════════════════════
+ * 全站视觉基调 —— 沿用旧版 web/static/app.css 的设计系统
+ * ══════════════════════════════════════════════════════════════
+ * 为什么不用 Element Plus 默认主题：默认主题是「纯白卡片 + 默认蓝 +
+ * 冷灰底」，而旧版多年现场用下来的是一套自建色板（暖灰底 #f4f6f9、
+ * 微阴影卡片、10px 圆角、克制的品牌蓝）。迁移如果只换组件不换色板，
+ * 新版就会「功能对、看着不对」—— 现场一眼觉得是另一个系统。
+ *
+ * 做法：把旧版的 CSS 变量**重映射到 Element Plus 的变量名**，
+ * 所有 el-* 组件自动继承，全站只此一处真源（不逐页覆写样式）。
+ */
+
+:root {
+  /* ── 旧版色板（原样搬过来，值一个不改）── */
+  --pl-bg: #f4f6f9;
+  --pl-panel: #ffffff;
+  --pl-panel-2: #fafbfc;
+  --pl-line: #e6e9ee;
+  --pl-line-2: #eef1f5;
+  --pl-text: #1f2733;
+  --pl-muted: #647084;
+  --pl-faint: #95a0b1;
+  --pl-brand: #2563eb;
+  --pl-brand-ink: #1d4ed8;
+  --pl-brand-soft: #eaf1ff;
+  --pl-ok: #16a34a;
+  --pl-ok-soft: #e9f8ee;
+  --pl-warn: #b45309;
+  --pl-warn-soft: #fef6e7;
+  --pl-err: #dc2626;
+  --pl-err-soft: #fdecec;
+  --pl-radius: 10px;
+  --pl-radius-sm: 7px;
+  /* 旧版的微阴影：几乎看不见，但卡片从底色里「浮」出来一点 */
+  --pl-shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 1px 2px rgba(16, 24, 40, .04);
+  --pl-shadow-lg: 0 8px 28px rgba(16, 24, 40, .14);
+  /* 照片分类配色：一眼扫出「标识卡还是产品照」，不靠读字 */
+  --k-label: #15803d;         --k-label-soft: #dcfce7;
+  --k-product: #1d4ed8;       --k-product-soft: #dbeafe;
+  --k-packaging: #b45309;     --k-packaging-soft: #fef3c7;
+  --k-packing_list: #7e22ce;  --k-packing_list-soft: #f3e8ff;
+  --k-scene: #0f766e;         --k-scene-soft: #ccfbf1;
+  --k-unknown: #647084;       --k-unknown-soft: #eef1f5;
+
+  /* ── Element Plus 变量重映射（继承旧版色板）── */
+  --el-color-primary: var(--pl-brand);
+  --el-color-primary-light-3: #4d82ef;
+  --el-color-primary-light-5: #7ba3f3;
+  --el-color-primary-light-7: #dbe7fd;
+  --el-color-primary-light-8: var(--pl-brand-soft);
+  --el-color-primary-light-9: #f2f7ff;
+  --el-color-primary-dark-2: var(--pl-brand-ink);
+
+  --el-color-success: var(--pl-ok);
+  --el-color-success-light-9: var(--pl-ok-soft);
+  --el-color-warning: var(--pl-warn);
+  --el-color-warning-light-9: var(--pl-warn-soft);
+  --el-color-danger: var(--pl-err);
+  --el-color-danger-light-9: var(--pl-err-soft);
+  --el-color-error: var(--pl-err);
+  --el-color-error-light-9: var(--pl-err-soft);
+
+  --el-text-color-primary: var(--pl-text);
+  --el-text-color-regular: #3d4757;
+  --el-text-color-secondary: var(--pl-muted);
+  --el-text-color-placeholder: var(--pl-faint);
+
+  --el-border-color: var(--pl-line);
+  --el-border-color-light: var(--pl-line);
+  --el-border-color-lighter: var(--pl-line-2);
+  --el-border-color-extra-light: var(--pl-line-2);
+
+  --el-fill-color: var(--pl-panel-2);
+  --el-fill-color-light: var(--pl-line-2);
+  --el-fill-color-lighter: var(--pl-bg);
+  --el-fill-color-blank: var(--pl-panel);
+
+  /* 圆角：旧版 10px 大卡 / 7px 控件，比 EP 默认 4px 更「软」 */
+  --el-border-radius-base: var(--pl-radius-sm);
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+  --el-font-size-base: 14px;
+  --el-font-size-small: 12px;
+  --el-font-size-extra-small: 12px;
+  /* ⚠️ 控件高度必须锁死一个值：EP 默认 input 32 / input--suffix 34 / small 按钮 24
+     / radio-group 22，四种高度混在一条工具条上就是「控件没对齐」（老板 22:22 提的第2 条）。
+     统一到 32px，页面里所有 el-select / el-input / el-button 才在一条基线上。*/
+  --el-component-size: 32px;
+  --el-component-size-small: 32px;   /* small 也给32 —— 同一条工具条里不许出现两种高度 */
+  --el-component-size-large: 36px;
+}
+
+html, body, #app { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", var(--el-font-family, sans-serif);
+  font-size: 14px;
+  color: var(--pl-text);
+  background: var(--pl-bg);
+}
+
+/* ── 骨架 ── */
+.app-layout { height: 100%; }
+.app-aside {
+  background: var(--pl-panel);
+  border-right: 1px solid var(--pl-line);
+  display: flex; flex-direction: column;
+}
+.app-logo {
+  height: 56px; display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 15px; color: var(--pl-text);
+  text-decoration: none; letter-spacing: .3px;
+  border-bottom: 1px solid var(--pl-line);
+  flex: 0 0 auto;
+}
+.app-logo:hover { background: var(--pl-panel-2); color: var(--pl-brand); }
+/* ⚠️ 滚动容器必须放在**内容层** .app-scroll 上，不能是 .app-main。
+   .app-main 是 el-container 的 flex 子项、被 height:100% 锁死 viewport 高，
+   sticky 子元素在这个「固定高度的滚动框」里不会随内容滚进而停住
+   （实测滚 460px 左树仍上移 86px）。
+   把 overflow 挪到无高度约束的 .app-scroll，sticky 才有正常的滚动上下文。
+   padding 也放这里 —— 滚动容器带 padding 会让 sticky top 差一截。 */
+.app-main { background: var(--pl-bg); overflow: hidden; padding: 0; }
+/* 2026-10-21 老板：「页面距导航和顶部的边距太大」——
+   原来 EP 的 .el-main 默认 20px padding **叠在**这里 16px 之上，
+   实际空出 36px。现在 el-main 归零，这一层收到 10px。 */
+.app-scroll { height: 100%; overflow: auto; padding: 10px; }
+/* 2026-10-21：所有页面容器撑满宽度，不再居中限宽 */
+.app-scroll > * { max-width: 100% !important; width: 100%; }
+/* 🔴 EP 2.7 给 `.el-card__body` 写了 `overflow:auto`。这会在页面里造出一个
+   「嵌套滚动容器」：卡片里的 position:sticky 会被绑到这个 body 上，而 body 是
+   被内容撑高的（scrollHeight == clientHeight，自己根本不滚）→ sticky 彻底失效，
+   元素照样跟着外层 .app-scroll 一起滚走。
+   向导页把整步内容包在 el-card 里，第③步左树就是这么坏的（实测滚 700 时
+   top 从 6 掉到 -392）。向导里的卡片一律不裁剪，滚动统一交给 .app-scroll。 */
+.wizard-page .el-card,
+.wizard-page .el-card__body { overflow: visible; }
+.page-card { max-width: 100%; margin: 0 auto; }
+/* 页面内多张卡片之间的呼吸间距（旧版 main 是 16px 上下留白） */
+.page-card > .el-card + .el-card { margin-top: 16px; }
+
+/* ── 侧栏菜单：旧版的选中态是「淡蓝底 + 蓝字 + 半粗」，不是 EP 的左竖条 ── */
+.app-menu { border-right: 0; flex: 0 0 auto; }
+.app-menu:not(.el-menu--collapse) { width: 100%; }
+.app-menu .el-menu-item {
+  height: 40px; line-height: 40px; font-size: 14px;
+  margin: 2px 10px; border-radius: var(--pl-radius-sm);
+  color: var(--pl-muted);
+}
+.app-menu .el-menu-item:hover { background: var(--pl-line-2); color: var(--pl-text); }
+.app-menu .el-menu-item.is-active {
+  background: var(--pl-brand-soft); color: var(--pl-brand-ink); font-weight: 600;
+}
+.app-menu .el-menu-item.is-active .el-icon { color: var(--pl-brand); }
+/* ⚠️ 折叠态要压三层，缺一层就偏（每层都实测过，别凭感觉改）：
+   ① el-menu--collapse 默认 width:64px，比侧栏宽 → 撑出滚动条；
+   ② 菜单项默认 margin 0 4px，折叠态下左右留白让图标不居中；
+   ③ 折叠态 EP 把内容包进 .el-menu-tooltip__trigger，必须让它 flex:1 铺满 li，
+      不然它只按图标宽度收缩、自己的 center 等于左对齐；
+   ④ ⚠️ 最隐蔽：EP 给 **li 和 trigger 都加了 padding-right:20px**
+      （实测 pad=0px/20px，是右不是左！），内容盒被压成 43-20=23px 贴到左边，
+      图标永远差居中 10px。只重置 padding-left 没用，四边都要清。 */
+.app-menu.el-menu--collapse { width: 100%; }
+.app-menu.el-menu--collapse .el-menu-item {
+  margin: 2px 6px; padding: 0 !important;
+  display: flex; align-items: center; justify-content: center;
+}
+.app-menu.el-menu--collapse .el-menu-item .el-menu-tooltip__trigger {
+  flex: 1; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.app-menu.el-menu--collapse .el-menu-item .el-menu-tooltip__trigger > :not(.el-icon) {
+  display: none !important;
+}
+.app-menu.el-menu--collapse .el-menu-item .el-icon { margin-right: 0; font-size: 18px; }
+.app-logo.folded { font-size: 17px; }
+
+/* ── 卡片：旧版面板是「细边 + 微阴影 + 10px 圆角」，
+     EP 默认卡片只有边框，看着像一堆表格框。── */
+.el-card {
+  border-radius: var(--pl-radius);
+  border-color: var(--pl-line);
+  box-shadow: var(--pl-shadow);
+}
+.el-card__header {
+  padding: 10px 14px;
+  border-bottom-color: var(--pl-line-2);
+  font-weight: 600;
+}
+/* 卡片内容内边距：EP 默认 20px 偏松（2026-10-21 老板要求整体更紧凑） */
+.el-card__body { padding: 14px; }
+
+/* ── 表格：旧版表头是浅灰底 + 12px 中灰字，比 EP 默认的粗黑表头安静 ── */
+.el-table th.el-table__cell { background: var(--pl-panel-2) !important; }
+.el-table th.el-table__cell > .cell { font-weight: 500; color: var(--pl-muted); font-size: 12px; }
+.el-table td.el-table__cell, .el-table th.el-table__cell.is-leaf { border-bottom-color: var(--pl-line-2); }
+.el-table__body tr:hover > td.el-table__cell { background: var(--pl-panel-2) !important; }
+
+/* ── 按钮：默认态比 EP 轻，主按钮才实心（旧版审美：一页一个实心按钮就够）── */
+.el-button { font-weight: 500; }
+.el-button--primary { box-shadow: 0 1px 2px rgba(37, 99, 235, .18); }
+
+/* ── 分段控件（视图切换compact/详情/分组/关联）必须与同行下拉同高 ──
+   radio-group 默认 22px、其 inner 更矮，和 32px 的 el-select 并排放会明显错位。*/
+.el-radio-group { display: inline-flex; }
+.el-radio-group .el-radio-button__inner {
+  height: 32px; line-height: 30px; padding: 0 14px; font-size: 13px;
+  display: inline-flex; align-items: center;
+}
+.el-dropdown .el-button { height: 32px; }
+/* 工具条里的复选框与下拉对齐 */
+.toolbar .el-checkbox { height: 32px; margin-right: 0; }
+/* ── 控件高度锁死32px（老板 22:22 第2 条：控件没对齐）──
+   Element Plus 默认给出四种高度：el-select--small 24 / el-input 32 /
+   el-button--small 24 / el-radio-button__inner 22 —— 同一条工具条上并排放
+   就是肉眼可见的错位。全部拉到 32px 同一基线。
+   ⚠️ el-select 的 small 变体高度**不吃** --el-component-size-small 的全局改写，
+      它由 `.el-select--small .el-select__wrapper` 自己算 24px —— 实测在
+      向导③工具条里 select 24、input/button 32，正是老板看到的错位。
+      必须显式锁 wrapper 的 min-height。 */
+.el-select,
+.el-select--small { height: var(--el-component-size); }
+.el-select .el-select__wrapper,
+.el-select--small .el-select__wrapper { min-height: var(--el-component-size); }
+.el-button.is-text,
+.el-button.el-button--small.is-text,
+.el-button.el-button--small {
+  height: var(--el-component-size); padding: 0 12px;
+}
+/* ── 工具条字号统一13px（老板第2 条「字体大小不一样」）──
+   同一行里 select 14px / input 12px / button 12px / checkbox 14px 各说各话。
+   只收工具条，不动表格正文与页面标题。 */
+.toolbar, .wclbar { font-size: 13px; }
+.toolbar .el-select, .toolbar .el-input, .toolbar .el-button, .toolbar .el-checkbox,
+.wclbar .el-select, .wclbar .el-input, .wclbar .el-button, .wclbar .el-checkbox {
+  font-size: 13px;
+}
+.toolbar .el-input__inner, .wclbar .el-input__inner,
+.toolbar .el-select__placeholder, .wclbar .el-select__placeholder {
+  font-size: 13px;
+}
+/* ── 工具条里的「模式开关」按钮（按箱号分组 / 批量选择）──
+   它们是开关不是动作：未选中给淡灰底无描边，选中直接实心 primary。
+   与「重置」这种白底描边的次要动作在视觉上分开，
+   否则一排四个白按钮，扫一眼分不出哪个会改视图、哪个只是清条件。 */
+.toolbar .tgl-btn, .wclbar .tgl-btn {
+  background: var(--pl-line-2); border-color: transparent;
+}
+.toolbar .tgl-btn:hover, .wclbar .tgl-btn:hover {
+  background: var(--pl-line); color: var(--pl-text); border-color: transparent;
+}
+.toolbar .tgl-btn.el-button--primary, .wclbar .tgl-btn.el-button--primary {
+  background: var(--pl-brand); border-color: var(--pl-brand); color: #fff;
+}
+
+/* ── 通用小工具类（各页 scoped 样式里已在用，统一补齐语义色）── */
+.faint { color: var(--pl-muted); font-size: 12px; }
+.dim { opacity: .45; }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.spacer { flex: 1; }
+.none { padding: 8px; }
+
+/* 分类标签：同一分类在任何页面都是同一个颜色（与旧版 app.css 同值） */
+.k-label { color: var(--k-label); }
+.k-product { color: var(--k-product); }
+.k-packaging { color: var(--k-packaging); }
+.k-packing_list { color: var(--k-packing_list); }
+.k-scene { color: var(--k-scene); }
+.k-unknown { color: var(--k-unknown); }
+.bg-k-label { background: var(--k-label-soft); }
+.bg-k-product { background: var(--k-product-soft); }
+.bg-k-packaging { background: var(--k-packaging-soft); }
+.bg-k-packing_list { background: var(--k-packing_list-soft); }
+.bg-k-scene { background: var(--k-scene-soft); }
+.bg-k-unknown { background: var(--k-unknown-soft); }
+
+/* ══════════════════════════════════════════════════════════════
+ * 视觉打磨层（在旧色板上做减法：更轻的阴影、更柔和的状态、更克制的动效。
+ * 只碰视觉属性 —— 高度 / sticky / 滚动上下文一律不动，避免破坏上面的硬约束。）
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── 滚动条：细、低对比，不抢内容 ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d3dbe4; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #b9c4d1; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── 卡片：hover 轻微浮起（只加在卡片上，过渡要短，别像弹跳）── */
+.el-card { transition: box-shadow .15s ease, border-color .15s ease; }
+.el-card:hover { box-shadow: 0 4px 16px rgba(16, 24, 40, .10), 0 1px 3px rgba(16, 24, 40, .06); }
+
+/* ── 表格：更透气（斑马纹不全局加——含 fixed 列的表格主/固定列是两层，
+    CSS 奇数行会错色，让 hover 高亮 + 收紧行距承担可读性）── */
+.el-table td.el-table__cell, .el-table th.el-table__cell { padding: 10px 0; }
+.el-table__cell > .cell { line-height: 1.5; }
+
+/* ── 按钮：主按钮有可感知的悬浮感，点击回落；焦点给可见环 ── */
+.el-button--primary { transition: transform .08s ease, box-shadow .12s ease, background-color .12s ease; }
+.el-button--primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37, 99, 235, .28); }
+.el-button--primary:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(37, 99, 235, .18); }
+.el-button:focus-visible,
+.el-input__wrapper:focus-within,
+.el-select__wrapper:focus-within,
+.el-textarea__inner:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, .45); outline-offset: 1px;
+}
+/* 输入聚焦：品牌描边 + 极淡外发光，替代 EP 默认的纯描边 */
+.el-input__wrapper.is-focus, .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--pl-brand) inset, 0 0 0 3px var(--pl-brand-soft);
+}
+
+/* ── 标签：更圆润、略粗 ── */
+.el-tag { border-radius: 6px; }
+.el-tag--small { padding: 0 8px; }
+
+/* ── 抽屉 / 弹窗：柔和阴影 + 圆角 ── */
+.el-drawer { box-shadow: var(--pl-shadow-lg); }
+.el-dialog { border-radius: var(--pl-radius); box-shadow: var(--pl-shadow-lg); }
+.el-message-box { border-radius: var(--pl-radius); }
+
+/* ── 空状态：底色更柔和 ── */
+.el-empty__description p { color: var(--pl-muted); }
+
+/* ── 页面卡片里的标题层级：正文 14 / 小节 13 / 说明 12，不再靠随机字号 ── */
+.page-card h2 { font-size: 17px; margin: 0 0 4px; letter-spacing: .2px; }
+
+/* ── 选择菜单弹出层：与卡片同款圆角阴影 ── */
+.el-popper.is-light, .el-popper.is-pure { border-radius: var(--pl-radius-sm); box-shadow: var(--pl-shadow-lg); }

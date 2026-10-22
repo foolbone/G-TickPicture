@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>集刻 · 产品库</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cpath d='M9 21V11h3.2l4.8 6.4V11H20v10h-3.2L12 14.6V21H9z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <div class="brand" title="集刻 · 产品库 —— 历史预检照片复用">集刻 · 产品库<small>历史预检照片复用</small></div>
+    <nav>
+      <!-- 2026-10-08 老板要求：作业向导**并进柜**（改名「柜作业」），导航不再单独
+           占一项。理由：五步（建柜→清单→照片→选图→报告）本来就都是「一个柜的
+           活」，单独放顶层等于让人先猜「我该进哪个 tab 才能干活」。
+           现在路径唯一：**柜 → 选一个柜 → 进它的柜作业**。
+           ⚠️ 「新产品确认」不再单独占 tab —— 它是第④步治理的一个待办子项，
+              从柜作业④的徽章进来（section 仍在，只是不在导航里）。 -->
+      <button data-tab="containers" class="on">柜</button>
+      <button data-tab="products">产品库</button>
+      <button data-tab="batches">照片库</button>
+      <button data-tab="report">报告档案</button>
+      <span class="navsep"></span>
+      <button data-tab="set">设置</button>
+    </nav>
+    <div class="spacer"></div>
+    <!-- 2026-10-11 老板要求：去掉顶部的「当前柜」全局选择器 —— 每个页面都各自
+         有柜选择器（柜作业 #wizCid、报告① #lrContainer），两个入口会让用户
+         混淆和选择冲突。全局锚点状态（localStorage plCid + core.setCid）保留，
+         只是不再从顶栏设置；各页自己的选择器照常同步/设置锚点。 -->
+    <span class="pill" id="topStat">加载中…</span>
+    <span class="pill" id="visionPill">多模态：检查中</span>
+  </div>
+</header>
+
+<main>
+  <!-- ════ 概览 ════ -->
+  <section id="tab-home">
+    <div class="cards" id="cards"></div>
+
+    <div class="panel">
+      <div class="phead"><h3>快速开始<span class="sub">按预检作业顺序走完这五步</span></h3></div>
+      <div class="row">
+        <button class="btn" data-go="batches">① 导入预检照片</button>
+        <button class="btn ghost" data-go="batches">② 跑治理</button>
+        <button class="btn ghost" data-go="review">③ 审核入库</button>
+        <button class="btn ghost" data-go="report">④ 检索匹配</button>
+        <button class="btn ghost" data-go="report">⑤ 生成报告</button>
+        <span class="spacer"></span>
+        <a class="faint" href="#" data-go="products">或先维护标准库 →</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h3>批次统计<span class="sub">每次导入是一个批次，治理与检索都以批次为单位</span></h3></div>
+      <div class="cards" id="batchCards"></div>
+      <div class="scroller" style="margin-top:10px;max-height:220px">
+        <table>
+          <thead><tr><th>批次</th><th style="width:130px">导入时间</th><th style="width:110px">照片（唯一/重复）</th>
+            <th style="width:170px">治理进度</th><th style="width:70px">已关联</th></tr></thead>
+          <tbody id="homeBatchBody"></tbody>
+        </table>
+      </div>
+      <div class="empty sm" id="homeBatchEmpty" style="display:none">
+        <div class="ec">🗂️</div><div class="et">还没有批次</div><div class="es">去「预检照片入库」导入第一批照片</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h3>系统说明<span class="sub">这套工具解决什么问题、怎么用</span></h3></div>
+      <div class="intro">
+        <p><b>集刻 · 产品库</b>是预检监装照片的<b>事后治理与复用工具</b>：把现场拍的大量照片自动分类、读码、关联到产品编码，
+          形成可检索的产品库，后续同编码的货可以直接复用历史照片，不用重拍。</p>
+        <div class="flow">
+          <div class="fstep"><div class="fn">1</div><div class="ft">导入照片</div>
+            <div class="fd">目录或网页上传，自动 MD5 去重、按 EXIF 时间分组，一次导入 = 一个批次。</div></div>
+          <div class="fstep"><div class="fn">2</div><div class="ft">跑治理</div>
+            <div class="fd">多模态分类（标识卡/产品/包装/清单/场景）→ OCR 读码 → 精确编码自动关联，模糊的进人工。</div></div>
+          <div class="fstep"><div class="fn">3</div><div class="ft">人工标注</div>
+            <div class="fd">认领模糊候选、确认新产品、合并裁决；标签上的品名/规格可提取后填充到产品信息。</div></div>
+          <div class="fstep"><div class="fn">4</div><div class="ft">产品库</div>
+            <div class="fd">每个产品的历史照片按批次归集，可裁剪标准图，一眼看出哪些批次没拍到。</div></div>
+          <div class="fstep"><div class="fn">5</div><div class="ft">检索与报告</div>
+            <div class="fd">粘贴货品编码 → 检索历史照片与标准图 → 导出素材包或整库落盘交付。</div></div>
+        </div>
+        <p class="muted" style="margin-top:10px">设计原则：自动关联只认高置信精确匹配，错关联比没关联危险；没配多模态 API 时降级为 OCR+启发式，功能变弱但不会不能用。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ 柜（资产页，四段骨架）════
+       v5：内联建柜表单**移除** —— 它原来紧挨着「搜柜号」筛选框，两个 input 排在一起，
+       初次接触分不出哪个要建、哪个要查（v5 病灶 A）。建柜统一走「柜作业①」，
+       这里保留一个「＋ 新建柜」按钮（同一个模态实现），结果与筛选视觉分区。 -->
+  <section id="tab-containers" class="on">
+  <div id="ctListView">
+    <div class="panel">
+      <!-- ① 标题区：页面名 + 定位 + 主操作（唯一，最右） -->
+      <div class="phead page-head">
+        <h2>柜<span class="sub">从柜进入「柜作业」—— 建柜 → 清单 → 照片 → 选图 → 报告，五步走完一柜</span></h2>
+        <span class="spacer"></span>
+        <button class="btn sm" id="cNew">＋ 新建柜</button>
+        <button class="btn ghost sm" id="cReload">刷新</button>
+      </div>
+      <!-- 脏柜锚点的常驻提示（默认空，wizard.js 的 renderAnchorWarn 填）。
+           🔴 放在**页面级**（柜列表顶部）而不是作业视图里：作业视图默认隐藏，
+              放里面等于「出事了但没人看得到」。两个视图共用这一条。
+           ⚠️ 必须在 .panel 外面 —— 里面的内容每次重绘都会被清掉。 -->
+      <div id="wizWarn" style="display:none"></div>
+      <!-- 建柜后的**快速进入**入口（默认隐藏，containers.js 建完柜填）。
+           ⚠️ 不能用 toast：toast 3 秒就没，老板刚建完柜要点进去时它早消失了；
+              而且 toast 是纯文本，放不了按钮。 -->
+      <div id="ctNewBar" style="display:none"></div>
+      <!-- ③ 筛选条：只改显示，不动数据；有独立底色与分隔线 -->
+      <div class="toolbar">
+        <input type="text" id="cQ" placeholder="搜柜号 / 封条号" style="min-width:180px">
+        <label class="faint">作业日期 <input type="date" id="cDateFrom" style="padding:2px"></label>
+        <span class="faint">至</span>
+        <input type="date" id="cDateTo" style="padding:2px">
+        <button class="btn sm" id="cSearch">筛选</button>
+        <button class="btn sm ghost" id="cDateClear" title="清掉日期筛选">清日期</button>
+        <span class="spacer"></span>
+        <span class="faint">建完柜到详情里补封条号 / 到离柜时间 / Inspector —— 这些进报告 General Information</span>
+      </div>
+      <!-- ④ 结果区：只读；点行开详情抽屉 -->
+      <div class="scroller" style="max-height:calc(100vh - 300px)">
+        <table>
+          <thead><tr>
+            <th style="width:52px">序号</th>
+            <th style="width:190px">柜号</th><th style="width:150px">封条号</th>
+            <th style="width:130px">清单行（未核对）</th><th style="width:120px">照片/监装</th>
+            <th style="width:110px">批次</th><th style="width:240px">作业时长</th><th style="width:200px">操作</th>
+          </tr></thead>
+          <tbody id="cBody"></tbody>
+        </table>
+        <div class="empty" id="cEmpty" style="display:none">
+          <div class="ec">🚢</div>
+          <div class="et">还没有柜</div>
+          <div class="es">先建柜，再往柜下导清单和照片</div>
+          <div class="eb"><button class="btn sm" id="cEmptyNew">＋ 新建柜</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 柜作业（原「作业向导」，2026-10-08 并进柜页）════
+       沿「①建柜 → ②导清单 → ③照片 → ④选图 → ⑤报告」走完**一个柜**的全部写动作。
+       五步状态全部派生自 /api/containers/{cid}/progress，不落 localStorage 记账。
+       柜号由顶栏全局锚点（#wizCid / #globalCid 同属一份 plCid）贯穿全流程。
+       ⚠️ 入口只在柜列表（每行一个「柜作业」按钮）+ 建柜后的快速进入条，
+          顶层导航里不再单独占一项（老板要求并进柜）。 -->
+  <div id="ctWizView" style="display:none">
+    <!-- 紧凑：标题 + 五个节点 + 当前柜 + 就绪度 **排在同一行**。
+         原来「标题区独占一行」+「步骤条再占一块、每个节点三行竖排」，
+         竖向吃掉近 200px，把下面的卡片挤到折叠线以下（老板 10-06 反馈）。 -->
+    <div class="panel wiztop">
+      <div class="wizbar">
+        <!-- 「← 柜列表」= 回柜列表换别的柜。老板要「在柜里也能进其他柜的作业」：
+             两条路都给 —— ①这个返回键回列表；②右边「当前柜」下拉直接切柜，
+             切了整套作业流（清单/照片/选图/报告）跟着换成那个柜的。 -->
+        <button class="btn ghost sm" id="wizBack" title="回到柜列表，可以换一个柜">← 柜列表</button>
+        <span class="wizttl">柜作业</span>
+        <div class="wstepbar" id="wizBar"></div>
+        <span class="spacer"></span>
+        <select id="wizCid" class="ctnSel" data-anchor="1" data-empty-label="选择柜…"
+                style="min-width:150px" title="当前柜 —— 切换它，下面五步整套换成这个柜的作业"></select>
+        <span class="pill" id="wizPct">—</span>
+      </div>
+    </div>
+    <div id="wizBody"></div>
+
+    <!-- ③照片步的治理面板：**整块搬进向导**（v6）。
+         ⚠️ 必须放在 #wizBody **外面** —— 里面每次重绘都会被清空，
+              而 batches.js 在模块加载时就按 id 绑好了这些控件的 handler，
+              搬进来等于「同一份实现复用」，不是复制。 -->
+    <div id="wizGovWrap" style="display:none">
+      <!-- 抽屉顶栏（2026-10-21 老板报「打开了关闭不了」）：
+           抽屉是 fixed 右侧 560px / z-index 70，**它自己把标题行右端的开关
+           按钮盖住了** —— 原来唯一的关闭入口（再点一次「照片治理」）在真实
+           鼠标下根本点不到（程序化 .click() 绕过命中测试，所以一直没测出来）。
+           这里补一条顶栏：× 关闭按钮 + 提示「Esc / 点面板外也能关」。
+           ⚠️ 顶栏在 #govPanel **外面** —— 面板本体是 batches.js 绑定的同一份实现，
+              别把按钮塞进 .foldbody（那里 display 由 batches.js 管）。 -->
+      <div class="gov-drawer-hint">
+        <b>照片治理</b>
+        <span class="faint">分类 → 读码 → 关联</span>
+        <span class="spacer"></span>
+        <span class="faint">Esc 或点面板外可关闭</span>
+        <button class="btn ghost sm" id="gGovClose" title="关闭治理抽屉（Esc 也可关）">✕ 关闭</button>
+      </div>
+      <div class="panel fold" id="govPanel">
+        <div class="phead" id="govHead" style="cursor:pointer;user-select:none">
+          <span class="farrow" id="govArrow">▶</span>
+          <h3>照片治理<span class="sub">分类 → 读码 → 关联（面板与照片库同一份实现）</span></h3>
+          <span class="spacer"></span>
+          <span class="tag" id="govBadge">—</span>
+          <button class="btn ghost sm" id="bOpen" title="照片批次明细">照片批次 · <b id="bOpenN">0</b></button>
+        </div>
+        <div class="foldbody" id="govBody" style="display:none">
+        <div class="row">
+          <select id="gBatch" style="min-width:220px">
+            <option value="">全部批次</option>
+          </select>
+          <button class="btn" id="gRun">开始治理</button>
+          <button class="btn danger" id="gStop" style="display:none" title="请求停止：当前这张跑完就收，已治理的保留，剩下的下次接着跑">停止治理</button>
+          <button class="btn ghost" id="gRetry" title="只把所选范围内治理失败的照片重置为待治理并重跑，不清关联">重试失败</button>
+          <button class="btn ghost" id="gReset" style="display:none" title="重置所选范围（批次或全部）后重跑">重新治理（重跑所选范围）</button>
+          <!-- OCR 补跑（2026-10-15 需求4）：只跑本地小模型，零多模态开销；
+               给早期治理时没提出编码的照片补 token + 重新匹配关联 -->
+          <button class="btn ghost" id="gOcrBackfill"
+            title="给治理过但没有 OCR 文本的照片补跑本地 OCR，并按当前产品库重新匹配关联（不花多模态额度）">OCR 补跑</button>
+          <label class="faint"><input type="checkbox" id="gVision" checked> 用多模态（未配 key 自动降级）</label>
+          <label class="faint"><input type="checkbox" id="gOcr" checked> 跑 OCR</label>
+          <label class="faint" title="重新治理时已关联的照片不重跑：不重置、不清其自动关联（人工关联任何情况都不动）"><input type="checkbox" id="gSkipLinked" checked> 跳过已关联的</label>
+          <input type="text" id="gLimit" placeholder="只跑前 N 张（留空=全部）" style="width:170px">
+        </div>
+        <div class="row">
+          <span class="faint" id="gHint"></span>
+          <span class="spacer"></span>
+          <span class="faint" id="gResetHint" style="display:none;color:var(--warn)">
+            所选范围已全部治理过。刚配好多模态或改了规则后，用「重新治理」按新配置重算。
+          </span>
+        </div>
+        <div class="bar"><i id="gBar"></i></div>
+        <div class="faint" id="gText">加载中…</div>
+        <!-- 失败诊断（2026-10-06）：治理失败时按原因分组 + 每类给下一步动作 -->
+        <div id="gErrBox" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ════ 产品库：全宽表格 + 点行弹出大抽屉详情 ════
+       左右分栏（表格窄）和上下堆叠（要滚来滚去）都不是最优 ——
+       表格保持全宽看列表、翻页、搜索；详情用 94vw 大抽屉盖上来，
+       关掉就回到原来的列表位置，上下文不丢。 -->
+  <section id="tab-products">
+    <div class="panel">
+      <!-- ① 标题区：主操作在最右；导入清单 → 模态（柜取自全局锚点，只读展示） -->
+      <div class="phead page-head">
+        <h2>产品库<span class="sub">跨柜复用的产品资产 —— 导入入口在「柜作业②」</span></h2>
+        <span class="spacer"></span>
+        <button class="btn sm" id="pImport">＋ 导入清单</button>
+        <button class="btn ghost sm" id="pTmpl" title="下载货品清单导入模板">模板</button>
+        <button class="btn ghost sm" id="pRelink" title="把已拍照但还没关联上的货品，用当前产品清单重新匹配一次。<br>照片先于清单导入时自动关联会落空，用这个补回来。<br>不重跑识别、不调多模态，只用已存的识别结果重新匹配。">补关联</button>
+      </div>
+      <!-- ③ 筛选条：只改显示 -->
+      <div class="toolbar" style="margin-bottom:8px;gap:6px">
+        <input type="text" id="pQ" placeholder="搜编码 / 品名（回车搜索）" style="min-width:160px;flex:1">
+        <select id="pContainer" style="width:200px" title="按柜号筛选产品（柜号取自产品清单）">
+          <option value="">全部柜号</option>
+        </select>
+        <select id="pHas" style="width:118px" title="按照片/待确认状态筛选">
+          <option value="">全部状态</option>
+          <option value="yes">有照片</option>
+          <option value="no">无照片</option>
+          <option value="nostd">无标准图</option>
+          <option value="cand">有待确认照片</option>
+          <option value="cand_code">有读码候选</option>
+          <option value="cand_group">有同组候选</option>
+        </select>
+        <select id="pSort" style="width:90px" title="缺口优先 = 没照片的排最前">
+          <option value="gap">缺口优先</option>
+          <option value="code">按编码</option>
+          <option value="cand">待确认多的排前</option>
+        </select>
+      </div>
+      <div class="scroller" style="max-height:calc(100vh - 320px)">
+        <table>
+          <thead><tr>
+            <th style="width:150px">编码</th><th>品名</th><th style="width:130px">规格</th>
+            <th style="width:55px">照片</th><th style="width:130px">待确认</th>
+            <th style="width:60px">标准图</th><th style="width:90px">柜号</th>
+            <th style="width:110px" title="第一次被哪个柜的清单带进来">来源柜</th>
+            <th style="width:80px" title="被多少个柜的清单引用（跨柜复用）">被引用</th>
+          </tr></thead>
+          <tbody id="pBody"></tbody>
+        </table>
+        <div class="empty" id="pEmpty" style="display:none">
+          <div class="ec">📦</div>
+          <div class="et">没有匹配的产品</div>
+          <div class="es">换个关键词试试，或先把产品清单导入进来</div>
+          <div class="eb"><button class="btn sm" id="pImport2">导入产品清单</button></div>
+        </div>
+      </div>
+      <div class="pager" id="pPager">
+        <button id="pgPrev">‹ 上一页</button>
+        <span class="pginfo" id="pgInfo">—</span>
+        <button id="pgNext">下一页 ›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ 预检照片入库 ════ -->
+  <section id="tab-batches">
+    <!-- 照片库页头（2026-10-21 老板布局调整）：
+         原「照片库」标题行整块删掉（冗余说明）；导入按钮移到筛选栏右侧。 -->
+
+    <!-- 左右两栏：左树右图（2026-10-14）。树和照片网格必须在同一个 flex
+         容器里 —— 上一版把网格留在了容器外，树孤零零缩在面板顶上。 -->
+    <div class="prow">
+      <!-- 左侧树形筛选（2026-10-14 老板需求）：先用途后分类，带当前范围计数。
+           点树 = 改下面两个下拉的值（筛选状态的真源仍是它们，各视图都读），
+           所以下拉保留在 DOM 里但隐藏 —— 不另养一份筛选逻辑。 -->
+      <div class="ptree" id="phTree"></div>
+      <div class="pmain">
+    <div class="panel">
+      <div class="toolbar">
+        <!-- 按柜筛选：这是**筛选**，不是全局柜锚点（锚点在柜作业/报告①里设） -->
+        <select id="fContainer" style="width:170px" title="按柜筛选照片（筛选归筛选，当前柜归锚点）">
+          <option value="">全部柜</option>
+        </select>
+        <select id="fBatch" style="display:none"><option value="">全部批次</option></select>
+        <select id="fState">
+          <option value="">全部状态</option>
+          <option value="pending">待治理</option>
+          <option value="done">已治理</option>
+          <option value="skipped">已跳过（场景照）</option>
+          <option value="failed">失败</option>
+        </select>
+        <!-- 排序（2026-10-19 老板需求「显示当前图片的排序规则，增加更多排序方式」）：
+             时间（默认，连拍判断基线）/ 编码（同编码聚一起方便核对）/
+             状态（待治理先看到，干活先处理没做的）。当前规则常显在右侧。 -->
+        <select id="fSort" title="列表排序方式">
+          <option value="time">按拍摄时间</option>
+          <option value="code">按编码</option>
+          <option value="state">按治理状态</option>
+        </select>
+        <span class="faint" id="fSortNote" style="font-size:12px" title="当前排序规则"></span>
+        <!-- 分类/用途改到左侧树形筛选（2026-10-14）；这两个下拉保留为状态真源，
+             视觉上隐藏，避免同一件事两套入口 -->
+        <select id="fKind" style="display:none"><option value="">全部分类</option></select>
+        <select id="fUsage" style="display:none">
+          <option value="">全部用途</option>
+          <option value="监装">监装照片</option>
+          <option value="预检">预检照片</option>
+          <option value="其他">其他照片</option>
+          <option value="_unset">未分类</option>
+        </select>
+        <!-- 无效照片筛选（2026-10-12）：默认排除 —— 拍糊/误拍的图不该占着工作队列；
+             「仅看无效」是标记的查看/撤销入口 -->
+        <select id="fInvalid" title="无效照片：拍糊/误拍/与作业无关，批量标记后默认不再出现在各工作队列">
+          <option value="hide">排除无效</option>
+          <option value="only">仅看无效</option>
+          <option value="all">含无效全部</option>
+        </select>
+        <label class="faint"><input type="checkbox" id="fUnlinked"> 只看待关联</label>
+        <select id="fCand" style="display:none" title="关联待办：照片里读出了编码、等人工确认的那部分">
+          <option value="">全部待办</option>
+          <option value="cand">待确认关联</option>
+          <option value="newprod">新产品确认</option>
+        </select>
+        <input type="text" id="fQ" placeholder="搜编码 / 描述 / 文件名" style="min-width:220px"
+               title="同时搜四处：文件名、大模型描述、大模型提取的编码、已关联的产品编码">
+        <button class="btn" id="fSearch">筛选</button>
+        <span class="spacer"></span>
+        <button class="btn sm" id="fImport">＋ 导入照片</button>
+        <button class="btn ghost sm" id="bGovGo">治理在向导③ →</button>
+        <span class="faint" id="fTotal"></span>
+        <button class="btn ghost sm" id="selBtn" title="批量选择：勾选后可批量标记无效照片">批量选择</button>
+        <span class="seg" id="shotView"
+              title="紧凑：只缩略图 + 分类角标；详情：信息常显；分组：同货品连拍聚成一组，点开看整组；分组档：按「已关联/待关联/待确认关联/新产品确认」选项卡切换">
+          <button data-v="compact">紧凑</button>
+          <button data-v="full">详情</button>
+          <button data-v="group">分组</button>
+          <button data-v="link">关联</button>
+        </span>
+      </div>
+      <!-- 五档分组选项卡（10-07 第二轮）。只在「关联」视图下显示 ——
+           紧凑/详情/分组三个视图是排版差异，不需要分组档。
+           徽章数字取自后端 COUNT，与列表条数同一份 WHERE。 -->
+      <div class="ptabs" id="shotTabs" style="display:none"></div>
+    </div>
+
+    <div class="grid" id="shots"></div>
+    <div class="empty" id="shotsEmpty" style="display:none">
+      <div class="ec">🖼️</div>
+      <div class="et">没有符合条件的照片</div>
+      <div class="es">在左侧树里换个用途 / 分类，或放宽上面的筛选再试</div>
+      <div class="eb"><button class="btn sm ghost" data-go="batches">去导入照片</button></div>
+    </div>
+    <div class="row pager-row" id="moreBtn" style="display:none;margin-top:14px"></div>
+    <!-- 批量选择操作条（2026-10-12）：只在选择模式下出现 -->
+    <div class="selbar" id="selBar" style="display:none">
+      <span class="faint">已选 <b id="selN">0</b> 张</span>
+      <button class="btn sm" id="selInvalid">标记无效</button>
+      <button class="btn sm ghost" id="selValid">取消无效</button>
+      <!-- 本次忽略（2026-10-18）：新产品暂不入库、退出关联队列，可恢复 -->
+      <button class="btn sm" id="selIgnore">本次忽略</button>
+      <button class="btn sm ghost" id="selUnignore">恢复忽略</button>
+      <!-- 分类手改（2026-10-15）：模型识别不一定准，勾一批改判 -->
+      <select id="selKind" title="把勾选的照片改判为这个分类">
+        <option value="">改判分类…</option>
+      </select>
+      <button class="btn sm ghost" id="selKindDo">应用分类</button>
+      <button class="btn sm ghost" id="selAll">全选本页</button>
+      <!-- 全选当前搜索条件下的全部数据（2026-10-15 需求1）：不止本页 -->
+      <button class="btn sm ghost" id="selAllFiltered"
+        title="按当前筛选条件选中全部照片（跨页，含未加载的）">全选筛选结果</button>
+      <!-- 清除已选（2026-10-15）：清空勾选但留在选择模式（与「退出选择」不同） -->
+      <button class="btn sm ghost" id="selClear"
+        title="清空已勾选的照片（仍在选择模式，可继续勾）">清除已选</button>
+      <button class="btn sm ghost" id="selExit">退出选择</button>
+      <span class="faint" id="selTip"></span>
+    </div>
+      </div><!-- /pmain -->
+    </div><!-- /prow -->
+  </section>
+
+  <!-- ════ 新产品确认 ════ -->
+  <section id="tab-review">
+    <div class="rtabs" id="revTabs">
+      <div class="rt on" data-rt="dc">新产品确认 <span class="n" id="rtDc">—</span></div>
+    </div>
+
+    <div id="rt-dc">
+    <div class="panel">
+      <div class="phead">
+        <h3>发现新产品<span class="sub">照片里读出、但产品库里没有的编码。这些编码不在已导入清单中，<b>不会进本柜报告</b>；对应清单在后续柜导入时会自动关联这些照片 —— 本柜优先处理「待确认关联」</span></h3>
+        <span class="spacer"></span>
+        <select id="dcBatchFilter" style="min-width:200px;margin-right:8px" title="按柜号批次筛选候选">
+          <option value="">全部批次</option>
+        </select>
+        <span class="tag" id="dcCount">—</span>
+        <button class="btn ghost sm" id="dcBatch">全部确认入库</button>
+        <button class="btn sm" id="dcReload">刷新候选</button>
+      </div>
+      <div class="batchbar" id="dcBar" style="display:none">
+        <span class="cnt" id="dcSelCnt"></span>
+        <button class="btn sm" id="dcBatchDo">确认选中</button>
+        <button class="btn ghost sm" id="dcBatchIgnore">忽略选中</button>
+      </div>
+      <div class="faint" style="margin:8px 0" id="dcHint"></div>
+    </div>
+    <div id="dcList"></div>
+    <div class="empty" id="dcEmpty" style="display:none">
+      <div class="ec">🔍</div>
+      <div class="et">没有新产品候选</div>
+      <div class="es">照片里读出的编码都已在产品库，或这个批次还没跑治理</div>
+      <div class="eb"><button class="btn sm ghost" data-go="batches">去跑治理</button></div>
+    </div>
+    </div><!-- /rt-dc -->
+  </section>
+
+  <!-- ════ 报告档案（2026-10-11 精简）：只保留「已生成报告」的档案 ════
+       老板要求：三步取材/生成流程（①选柜②取材③生成）整段去掉，生成入口
+       也去掉 —— 出报告只走「柜作业⑤」（选项、用图都在那边配），
+       这里只负责档案：概览卡 + 按柜/文件名筛选 + 下载/删除。 -->
+  <section id="tab-report">
+   <div class="panel">
+    <div class="phead page-head">
+      <h2>报告档案<span class="sub">已生成的装柜报告＝资产 —— 按柜检索，上一版可直接再下载</span></h2>
+      <span class="spacer"></span>
+      <button class="btn ghost sm" id="rpFilesReload">刷新</button>
+    </div>
+    <div class="cards" id="rfCards"></div>
+    <div class="toolbar">
+      <select id="rfContainer" style="width:180px" title="按柜号筛选（柜号由后端从文件名解析）">
+        <option value="">全部柜</option>
+      </select>
+      <input type="text" id="rfQ" placeholder="搜文件名关键词" style="min-width:180px">
+      <button class="btn sm" id="rfSearch">筛选</button>
+      <button class="btn ghost sm" id="rfReset">重置</button>
+      <span class="spacer"></span>
+      <span class="faint" id="rpFilesTotal"></span>
+    </div>
+    <div class="scroller" style="max-height:480px">
+      <table>
+        <thead><tr><th>报告文件</th><th style="width:140px">柜号</th>
+          <th style="width:110px">大小</th>
+          <th style="width:150px">生成时间</th><th style="width:150px">操作</th></tr></thead>
+        <tbody id="rpFilesBody"></tbody>
+      </table>
+      <div class="empty sm" id="rpFilesEmpty" style="display:none">
+        <div class="ec">📄</div><div class="et">还没有生成过报告</div>
+        <div class="es">到「柜」页进一个柜作业，第⑤步生成；生成完就会出现在这里</div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+
+  <!-- ════ 设置 ════ -->
+  <section id="tab-set">
+    <div class="panel">
+      <div class="phead"><h3>多模态大模型<span class="sub">选配 —— 没配也能用，只是分类退化为启发式</span></h3></div>
+      <div class="row">
+        <input type="text" id="vBase" placeholder="API Base，如 https://api.openai.com/v1" style="flex:1;min-width:320px">
+        <input type="text" id="vModel" placeholder="模型名，如 gpt-4o-mini">
+      </div>
+      <div class="row">
+        <input type="password" id="vKey" placeholder="API Key" style="flex:1;min-width:320px">
+        <button class="btn" id="vSave">保存</button>
+        <button class="btn ghost" id="vTest">拿一张照片试调</button>
+      </div>
+      <div class="faint" id="vMsg"></div>
+      <div class="faint" style="margin-top:10px">
+        ⚠ 本机没有视觉模型 API key，这条调用路径<b>未经真实 API 验证</b>。配好 key 后请先点「试调」。
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h3>标准库自动落盘<span class="sub">系统自动完成，无需手动操作</span></h3></div>
+      <div class="row">
+        <input type="text" id="stdExpDir" placeholder="落盘目录" style="flex:1;min-width:240px">
+        <button class="btn ghost sm" id="stdPickDir" style="margin-left:6px">选择目录</button>
+        <button class="btn" id="stdExpRun">立即落盘</button>
+      </div>
+      <div class="faint" style="margin-top:8px" id="stdExpMsg"></div>
+      <div class="faint" style="margin-top:4px">
+        每次治理完成后系统自动将已确认产品的照片复制到上方目录，命名：{产品编码}_{标识卡|产品|包装}[_n].jpg，附 standard_index.csv 对照表。做过标准图的产品导出标准图。
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h3>产品数据规范<span class="sub">直接读自 schema</span></h3></div>
+      <div class="scroller">
+        <table><thead><tr><th style="width:120px">字段</th><th style="width:90px">中文名</th>
+          <th style="width:80px">必填</th><th>说明</th></tr></thead>
+          <tbody id="fieldsBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h3>照片分类字典</h3></div>
+      <div class="scroller">
+        <table><thead><tr><th style="width:160px">分类</th><th>含义</th></tr></thead>
+          <tbody id="kindsBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead"><h3>已跳过的照片<span class="sub">人工标注时点了「跳过」的 —— 可撤销，撤销后回到待认领队列</span></h3>
+        <span class="spacer"></span>
+        <span class="faint" id="skTotal"></span>
+        <button class="btn ghost sm" id="skReload">刷新</button>
+      </div>
+      <div class="scroller" style="max-height:320px">
+        <table><thead><tr><th>文件</th><th style="width:150px">跳过时间</th>
+          <th style="width:100px">操作</th></tr></thead>
+          <tbody id="skBody"></tbody></table>
+        <div id="skEmpty" style="display:none"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ════ 产品详情抽屉：点产品行滑出，关掉回到列表原位 ════ -->
+<div id="pMask"></div>
+<div id="pDetail" class="pdrawer">
+  <div class="pdh">
+    <b id="pTitle">点产品行 → 这里显示它的所有预检采集图片</b>
+    <span class="spacer"></span>
+    <span class="faint" id="pPos" style="font-size:12px"></span>
+    <button class="btn ghost sm" id="pPrev" title="上一个产品（键盘 ↑ 或 ←）">← 上一个</button>
+    <button class="btn ghost sm" id="pNext" title="下一个产品（键盘 ↓ 或 →）">下一个 →</button>
+    <button class="btn ghost sm" id="pDelete" style="display:none" title="删除此产品（不删除原照片）">删除产品</button>
+    <button class="btn ghost sm" id="pDetailClose">关闭</button>
+  </div>
+  <div class="pscroll" id="pShots"></div>
+</div>
+
+<!-- ════ 照片批次抽屉：主线不堆批次表，需要时从「治理」面板呼出 ════ -->
+<div id="bMask"></div>
+<div id="bDrawer" class="bdrawer">
+  <div class="bdh">
+    <b>照片批次</b>
+    <span class="faint" id="bTotal"></span>
+    <span class="spacer"></span>
+    <button class="btn ghost sm" id="bReload">刷新</button>
+    <button class="btn ghost sm" id="bClose">关闭</button>
+  </div>
+  <div class="bdb">
+    <table>
+      <thead><tr>
+        <th>批次</th><th style="width:150px">导入时间</th>
+        <th style="width:110px">照片（唯一/重复）</th>
+        <th style="width:180px">治理进度</th>
+        <th style="width:70px">已关联</th><th style="width:150px">操作</th>
+      </tr></thead>
+      <tbody id="bBody"></tbody>
+    </table>
+    <div class="empty" id="bEmpty" style="display:none">
+      <div class="ec">🗂️</div>
+      <div class="et">还没有照片批次</div>
+      <div class="es">一次导入即成为一个批次；治理与检索都以批次为单位</div>
+      <div class="eb"><button class="btn sm" id="bEmptyImport">去导入照片</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 柜详情抽屉：元数据 + 批次 + 柜况代表图 + 出报告（v3 聚合面板） -->
+<div id="ctMask"></div>
+<div id="ctDrawer" class="bdrawer" style="width:760px">
+  <div class="bdh">
+    <b id="ctTitle">柜</b>
+    <span class="faint" id="ctSub"></span>
+    <span class="spacer"></span>
+    <button class="btn sm" id="ctReport">出报告</button>
+    <button class="btn ghost sm" id="ctReload">刷新</button>
+    <button class="btn ghost sm" id="ctClose">关闭</button>
+  </div>
+  <div class="bdb" id="ctBody"></div>
+</div>
+
+<div id="busy"><div class="t" id="busyT">处理中…</div><div class="bar indet"><i></i></div><div class="d" id="busyD"></div></div>
+
+<div id="mask">
+  <span class="close">&times;</span>
+  <div class="mask-bar">
+    <button class="btn ghost sm" id="maskRotL" title="逆时针旋转 90°">↺ 左旋</button>
+    <button class="btn ghost sm" id="maskRotR" title="顺时针旋转 90°">↻ 右旋</button>
+    <button class="btn ghost sm" id="maskZoomIn" title="放大">＋</button>
+    <button class="btn ghost sm" id="maskZoomOut" title="缩小">－</button>
+    <button class="btn ghost sm" id="maskReset" title="重置旋转与缩放">重置</button>
+    <button class="btn sm" id="maskToDetail" style="display:none" title="关掉大图，打开这张照片的详情页">打开详情</button>
+    <span class="faint" id="maskInfo"></span>
+  </div>
+  <img id="maskImg" src="">
+  <div class="cap" id="maskCap"></div>
+</div>
+
+<div id="drawer">
+  <div class="dh">
+    <button class="btn ghost sm" id="dwPrev" title="上一张（← 键）">‹ 上一张</button>
+    <button class="btn ghost sm" id="dwNext" title="下一张（→ 键）">下一张 ›</button>
+    <span class="faint" id="dwPos"></span>
+    <span class="spacer"></span>
+    <!-- 2026-10-21 老板：OCR/大模型/忽略/无效 四个按钮从右栏挪到顶部导航行 -->
+    <span id="dwTopActions" style="display:none;gap:6px;align-items:center"></span>
+    <span class="faint" id="dwFile"></span>
+    <span class="x" id="dwClose">&times;</span>
+  </div>
+  <div class="db" id="dwBody"></div>
+</div>
+
+<div id="stdEd">
+  <div class="std-top">
+    <span class="t">标准图编辑</span>
+    <span class="faint" id="stdSug"></span>
+    <span class="spacer"></span>
+    <label class="faint">比例</label>
+    <select id="stdRatio">
+      <option value="0">自由</option>
+      <option value="1">1:1</option>
+      <option value="1.3333">4:3</option>
+      <option value="0.75">3:4</option>
+    </select>
+    <label class="faint">放大镜</label>
+    <select id="stdZoomSel">
+      <option value="2" selected>2x</option>
+      <option value="3">3x</option>
+      <option value="4">4x</option>
+      <option value="0">关</option>
+    </select>
+    <button class="btn ghost sm" id="stdRotL">旋转 90°</button>
+    <button class="btn ghost sm" id="stdReset">重置选框</button>
+    <button class="btn" id="stdSave">保存标准图</button>
+    <button class="btn ghost" id="stdClose">关闭</button>
+  </div>
+  <div class="std-stage">
+    <canvas id="stdCanvas"></canvas>
+    <div id="stdZoom" title="放大镜：跟随鼠标，辅助精确对齐裁剪边">
+      <canvas id="stdZoomCv" width="160" height="160"></canvas>
+      <span class="zl" id="stdZoomLv">2x</span>
+    </div>
+  </div>
+  <div class="std-bottom">
+    <span class="faint">拖四角/边缘调选框，框内拖动移动，框外点击重拉。</span>
+    <span class="spacer"></span>
+    <span class="muted">产品编码</span>
+    <input type="text" id="stdCode" placeholder="产品编码" style="min-width:200px">
+    <span class="muted">类别</span>
+    <select id="stdKind"></select>
+    <span class="faint" id="stdMsg"></span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

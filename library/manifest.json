@@ -1,0 +1,40 @@
+{
+  "kind": "gtick_photo_library",
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-26T14:01:49",
+  "source": {
+    "photoDir": "D:\\G-TickPicture\\doc\\PIDU9352234",
+    "checklists": [
+      "数量检查-PIDU9352234.xls",
+      "MX-PL20250405-02（星邦机械第二柜+焊丝）-报关资料.xlsx"
+    ],
+    "checklistCodes": 81,
+    "customsCodes": 81,
+    "intersection": 81
+  },
+  "params": {
+    "groupGapSec": 45,
+    "groupMaxPhotos": 12,
+    "matchMaxEditDistance": 2,
+    "matchMinTokenLength": 3
+  },
+  "counts": {
+    "products": 81,
+    "photos": 249,
+    "photosUnique": 236,
+    "photosDuplicate": 13,
+    "groups": 55,
+    "bindings": 109,
+    "byStrength": {
+      "B_ocr_multi": 28,
+      "B_ocr_single": 7,
+      "C_adjacent": 74
+    }
+  },
+  "ocr": {
+    "ran": 236,
+    "with_text": 203,
+    "hit_photos": 10
+  },
+  "disclaimer": "本库照片为历史作业素材，仅用于证明「该编码历史上长什么样」，不能作为「本次这批货状态」的证据。复用进交付包时必须在文件名与对照表中标明来源，是否采用由报告员决定。"
+}

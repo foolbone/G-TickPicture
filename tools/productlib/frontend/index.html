@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>集刻 · 产品库</title>
+  <style>
+    /* 首屏骨架（2026-10-19）：JS 包 1.4MB，冷启 2~3s 纯白 —— 老板实测
+       体感是「页面坏了/点了没反应」。挂载前先给一帧布局占位，Vue 就位后
+       整体替换。样式内联在这里（不走构建），保证第一帧就有。 */
+    #app:empty::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 9999;
+      background:
+        linear-gradient(90deg, #f0f2f5 25%, #e6e9ee 37%, #f0f2f5 63%) 0 0/400px 100% no-repeat,
+        #f7f8fa;
+      animation: sk 1.4s ease infinite;
+    }
+    @keyframes sk { 0%{background-position:-400px 0,0 0} 100%{background-position:calc(100% + 400px) 0,0 0} }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

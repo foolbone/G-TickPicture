@@ -1,0 +1,13 @@
+﻿PATH=C:\Users\Bone\AppData\Local\Temp\gt_analyze.txt
+SIZE=4852
+HEAD=FF FE 66 00 6C 00 75 00 74 00 74 00 65 00 72 00
+TXTLEN=2426
+TAIL=ge - test\native_gallery_service_test.dart:5:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:gtick/domain/capture/native_gallery_service.dart' - test\native_gallery_service_test.dart:5:8 - uri_does_not_exist
+  error - The name 'NativeGalleryService' isn't a class - test\native_gallery_service_test.dart:67:30 - creation_with_non_type
+  error - The name 'NativeGalleryService' isn't a class - test\native_gallery_service_test.dart:78:30 - creation_with_non_type
+  error - The name 'NativeGalleryService' isn't a class - test\native_gallery_service_test.dart:86:31 - creation_with_non_type
+  error - The name 'NativeGalleryService' isn't a class - test\native_gallery_service_test.dart:92:29 - creation_with_non_type
+
+12 issues found. (ran in 182.5s)
+EXIT=1

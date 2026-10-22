@@ -1,0 +1,8 @@
+[I/Capture] gallery imported 1 photos
+00:08 +364: D:/G-TickPicture/app/test/wechat_import_takenat_test.dart: importFromGallery takenAts 瑕嗙洊閾?takenAts 闀垮害涓嶈冻鏃舵寜涓嬫爣瀵归綈锛岀己鐪佷笅鏍囪蛋鍏滃簳
+00:08 +364: D:/G-TickPicture/app/test/wechat_import_takenat_test.dart: importFromGallery takenAts 瑕嗙洊閾?涓嶄紶 takenAts锛堢浉鍐屽鍏ヨ€佽矾寰勶級琛屼负瀹屽叏涓嶅彉
+[W/Capture] enrich failed for 18b06862-cc2d-436a-ae8f-dfa8a9f40e47 :: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+00:08 +364: D:/G-TickPicture/app/test/wechat_import_takenat_test.dart: importFromGallery takenAts 瑕嗙洊閾?takenAts 闀垮害涓嶈冻鏃舵寜涓嬫爣瀵归綈锛岀己鐪佷笅鏍囪蛋鍏滃簳
+[I/Capture] gallery imported 2 photos
+00:09 +365: All tests passed!
+EXIT=0
