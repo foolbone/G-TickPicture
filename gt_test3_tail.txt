@@ -1,5 +1,0 @@
-[W/Capture] enrich failed for f256de9c-8348-4076-aa41-7a236a393b67 :: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
-00:06 +362: D:/G-TickPicture/app/test/wechat_import_takenat_test.dart: importFromGallery takenAts 瑕嗙洊閾?takenAts 闀垮害涓嶈冻鏃舵寜涓嬫爣瀵归綈锛岀己鐪佷笅鏍囪蛋鍏滃簳
-[I/Capture] gallery imported 2 photos
-00:06 +363: D:/G-TickPicture/app/test/suggest_pipeline_test.dart: 鎵嬪姩閲嶆柊 OCR rerunGroup锛氭棫寤鸿娓呯┖銆乼oken 涓嶅彔鍔犮€侀噸鍚堟垚鏂板缓璁?00:06 +364: D:/G-TickPicture/app/test/suggest_pipeline_test.dart: 鎵嬪姩閲嶆柊 OCR rerunProject锛氶粯璁よ烦杩囧凡褰掑睘鐨勭収鐗囦笌缁?00:06 +365: All tests passed!
-EXIT=0
